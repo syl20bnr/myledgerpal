@@ -1,0 +1,49 @@
+
+* Overview
+Input: bank, csv file
+Output: ledger file
+Starting phase:
+- if unknown account number, ask for corresponding ledger account and
+store the response in the rc file.
+At each post, ask for:
+- if unknown corresponding ledger account, ask for a corresponding
+ledger account and store it in the rc file.
+- is it checked ?
+- any comments to add ?
+(check numbers are automatically added as comment)
+
+* Arguments
+mylp.py <bank> <csv_file> [-o ledger_file] [-i --interactive]
+bank: the bank name
+csv_file: the input csv file
+ledger_file: the output ledger file
+-i --interactive: interactive post review
+
+* .myledgerpal.rc
+** Overview
+Places where the program will look for this file:
+- in the current working directory
+- beside the location of the target ledger file
+- in home
+If the file is present in different places at the same
+time then only the first encountered one will be processed.
+** format
+{
+    "accounts": {
+        "Liabilities:MasterCard": "000-000-0000",
+        "Assets:Compte Joint RBC": "000-000-0000"
+    },
+    "rules": {
+        "Expenses:Alimentation:Courses": {
+            "IGA": 100,
+            "Walmart": 100,
+            "Costco": 100
+        },
+        "Expenses:Logement:Assurance":{
+            "DESJ. ASS. GEN.": 40,
+        },
+        "Expenses:Transports:Voiture:Assurance":{
+            "DESJ. ASS. GEN.": 60,
+        }
+    }
+ }
