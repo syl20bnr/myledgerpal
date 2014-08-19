@@ -1,5 +1,8 @@
 # My Ledger Pal
 
+__This is a Work In Progress__
+
+
     My ledger pal helps me to import CSV reports produced by my bank.
     
     Usage:
