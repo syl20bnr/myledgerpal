@@ -44,7 +44,9 @@ class TestMyLedgerPal(unittest.TestCase):
     # Unit Tests
     # ------------------------------------------------------------------------
 
-    def test_backup_output_integer_suffix(self):
+    @patch.object(shutil, "copyfile")
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__backup_output(self, init_mock, copy_mock):
         @static_var("exist_counter", 0)
         def mocked_exists(self):
             mocked_exists.exist_counter += 1
@@ -54,12 +56,11 @@ class TestMyLedgerPal(unittest.TestCase):
                 return False
         self._print_func_name()
         expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak5")
-        with patch.object(mylpl.MyLedgerPal, "_initialize_params"):
-            with patch.object(os.path, "exists", mocked_exists):
-                with patch.object(shutil, "copyfile"):
-                    obj = self._get_myledgerpal_obj()
-                    backup = obj._backup_output()
-                    self.assertEqual(expected, backup)
+        with patch.object(os.path, "exists", mocked_exists):
+            obj = self._get_myledgerpal_obj()
+            backup = obj._backup_output()
+            self.assertEqual(expected, backup)
+
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank(self, init_mock):
         self._print_func_name()
