@@ -57,18 +57,18 @@ def main():
 
 class MyLedgerPal(object):
 
-    BANKS_COLNAME_ACC_NUM = 'acc_num'
-    BANKS_COLNAME_DATE = 'date'
-    BANKS_COLNAME_CHECK_NUM = 'check_num'
-    BANKS_COLNAME_DESC = 'desc'
-    BANKS_COLNAME_AMOUNT = 'amount'
+    BANK_COLNAME_ACC_NUM = 'acc_num'
+    BANK_COLNAME_DATE = 'date'
+    BANK_COLNAME_CHECK_NUM = 'check_num'
+    BANK_COLNAME_DESC = 'desc'
+    BANK_COLNAME_AMOUNT = 'amount'
 
     BANKS = {
-        'RBC': {BANKS_COLNAME_ACC_NUM: 1,
-                BANKS_COLNAME_DATE: 2,
-                BANKS_COLNAME_CHECK_NUM: 3,
-                BANKS_COLNAME_DESC: [4, 5],
-                BANKS_COLNAME_AMOUNT: 6}}
+        'RBC': {BANK_COLNAME_ACC_NUM: 1,
+                BANK_COLNAME_DATE: 2,
+                BANK_COLNAME_CHECK_NUM: 3,
+                BANK_COLNAME_DESC: [4, 5],
+                BANK_COLNAME_AMOUNT: 6}}
 
     @staticmethod
     def print_banks():
@@ -117,14 +117,14 @@ class MyLedgerPal(object):
     def _initialize_bank(self):
         c = MyLedgerPal
         i = self._get_bank_colidx_definition(self._bank)
-        self._columns[c.BANKS_COLNAME_ACC_NUM] = i.get(
-            c.BANKS_COLNAME_ACC_NUM, -1)
-        self._columns[c.BANKS_COLNAME_CHECK_NUM] = i.get(
-            c.BANKS_COLNAME_CHECK_NUM, -1)
-        self._columns[c.BANKS_COLNAME_AMOUNT] = i.get(
-            c.BANKS_COLNAME_AMOUNT, -1)
-        self._columns[c.BANKS_COLNAME_DESC] = i.get(c.BANKS_COLNAME_DESC, -1)
-        self._columns[c.BANKS_COLNAME_DATE] = i.get(c.BANKS_COLNAME_DATE, -1)
+        self._columns[c.BANK_COLNAME_ACC_NUM] = i.get(
+            c.BANK_COLNAME_ACC_NUM, -1)
+        self._columns[c.BANK_COLNAME_CHECK_NUM] = i.get(
+            c.BANK_COLNAME_CHECK_NUM, -1)
+        self._columns[c.BANK_COLNAME_AMOUNT] = i.get(
+            c.BANK_COLNAME_AMOUNT, -1)
+        self._columns[c.BANK_COLNAME_DESC] = i.get(c.BANK_COLNAME_DESC, -1)
+        self._columns[c.BANK_COLNAME_DATE] = i.get(c.BANK_COLNAME_DATE, -1)
         # for now we don't allow undefined field
         for k, v in self._columns.items():
             if v == -1:
