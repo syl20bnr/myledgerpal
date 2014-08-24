@@ -35,7 +35,7 @@ ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
 
 def main():
     try:
-        args = docopt(__doc__, version='My Ledger Pal (mypl) v0.1')
+        args = docopt(__doc__, version='My Ledger Pal (mylpl) v0.1')
         if args['--list']:
             MyLedgerPal.print_banks()
         else:
