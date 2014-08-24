@@ -60,6 +60,34 @@ class TestMyLedgerPal(unittest.TestCase):
                     obj = self._get_myledgerpal_obj()
                     backup = obj._backup_output()
                     self.assertEqual(expected, backup)
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank(self, init_mock):
+        self._print_func_name()
+        testbank = {mylpl.MyLedgerPal.BANKS_COLNAME_ACC_NUM: 1,
+                    mylpl.MyLedgerPal.BANKS_COLNAME_DATE: 2,
+                    mylpl.MyLedgerPal.BANKS_COLNAME_CHECK_NUM: 3,
+                    mylpl.MyLedgerPal.BANKS_COLNAME_DESC: [4, 5],
+                    mylpl.MyLedgerPal.BANKS_COLNAME_AMOUNT: 6}
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual(testbank, obj._columns)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_missing_field(self, init_mock):
+        self._print_func_name()
+        testbank = {mylpl.MyLedgerPal.BANKS_COLNAME_ACC_NUM: 1,
+                    mylpl.MyLedgerPal.BANKS_COLNAME_CHECK_NUM: 3,
+                    mylpl.MyLedgerPal.BANKS_COLNAME_DESC: [4, 5],
+                    mylpl.MyLedgerPal.BANKS_COLNAME_AMOUNT: 6}
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            with self.assertRaises(Exception) as exception_ctx:
+                obj = self._get_myledgerpal_obj()
+                obj._initialize_bank()
+            self.assertEqual("Column 'date' is not defined for bank 'RBC'",
+                             exception_ctx.exception.message)
 
     # Functional Tests
     # ------------------------------------------------------------------------
