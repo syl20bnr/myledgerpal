@@ -31,6 +31,7 @@ import csv
 
 ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
 ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
+ERR_UNDEFINED_COLUMN = "Column '{0}' is not defined for bank '{1}'"
 
 
 def main():
@@ -56,12 +57,18 @@ def main():
 
 class MyLedgerPal(object):
 
+    BANKS_COLNAME_ACC_NUM = 'acc_num'
+    BANKS_COLNAME_DATE = 'date'
+    BANKS_COLNAME_CHECK_NUM = 'check_num'
+    BANKS_COLNAME_DESC = 'desc'
+    BANKS_COLNAME_AMOUNT = 'amount'
+
     BANKS = {
-        'RBC': {'acc_num': 1,
-                'date': 2,
-                'check_num': 3,
-                'desc': [4, 5],
-                'amount': 6}}
+        'RBC': {BANKS_COLNAME_ACC_NUM: 1,
+                BANKS_COLNAME_DATE: 2,
+                BANKS_COLNAME_CHECK_NUM: 3,
+                BANKS_COLNAME_DESC: [4, 5],
+                BANKS_COLNAME_AMOUNT: 6}}
 
     @staticmethod
     def print_banks():
@@ -78,6 +85,7 @@ class MyLedgerPal(object):
         self._bank = bank
         self._input = input
         self._output = output
+        self._columns = {}
         self._initialize_params()
 
     def _initialize_params(self):
@@ -103,8 +111,24 @@ class MyLedgerPal(object):
         ))
         return backup
 
+    def _get_bank_colidx_definition(self, bankname):
+        return MyLedgerPal.BANKS[bankname]
+
     def _initialize_bank(self):
-        pass
+        c = MyLedgerPal
+        i = self._get_bank_colidx_definition(self._bank)
+        self._columns[c.BANKS_COLNAME_ACC_NUM] = i.get(
+            c.BANKS_COLNAME_ACC_NUM, -1)
+        self._columns[c.BANKS_COLNAME_CHECK_NUM] = i.get(
+            c.BANKS_COLNAME_CHECK_NUM, -1)
+        self._columns[c.BANKS_COLNAME_AMOUNT] = i.get(
+            c.BANKS_COLNAME_AMOUNT, -1)
+        self._columns[c.BANKS_COLNAME_DESC] = i.get(c.BANKS_COLNAME_DESC, -1)
+        self._columns[c.BANKS_COLNAME_DATE] = i.get(c.BANKS_COLNAME_DATE, -1)
+        # for now we don't allow undefined field
+        for k, v in self._columns.items():
+            if v == -1:
+                raise Exception(ERR_UNDEFINED_COLUMN.format(k, self._bank))
 
 
 if __name__ == '__main__':
