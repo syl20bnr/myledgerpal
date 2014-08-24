@@ -1,3 +1,4 @@
+#!/bin/env python
 # -*- coding: utf-8 -*-
 '''mypl.py (2014 - Sylvain Benner)
 My ledger pal helps me to import CSV reports produced by my bank.
