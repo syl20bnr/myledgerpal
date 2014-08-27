@@ -41,6 +41,16 @@ class TestMyLedgerPal(unittest.TestCase):
         output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
         return mylpl.MyLedgerPal('RBC', input, output)
 
+    def _get_bank_definition(self):
+        return {mylpl.MyLedgerPal.BANK_ENCODING: "utf-8",
+                mylpl.MyLedgerPal.BANK_QUOTE_CHAR: "'",
+                mylpl.MyLedgerPal.BANK_DELIMITER: ":",
+                mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM: 1,
+                mylpl.MyLedgerPal.BANK_COLNAME_DATE: 2,
+                mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM: 3,
+                mylpl.MyLedgerPal.BANK_COLNAME_DESC: [4, 5],
+                mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
+
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -62,26 +72,20 @@ class TestMyLedgerPal(unittest.TestCase):
             self.assertEqual(expected, backup)
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
-    def test__initialize_bank(self, init_mock):
+    def test__initialize_bank_columns(self, init_mock):
         self._print_func_name()
-        testbank = {mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM: 1,
-                    mylpl.MyLedgerPal.BANK_COLNAME_DATE: 2,
-                    mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM: 3,
-                    mylpl.MyLedgerPal.BANK_COLNAME_DESC: [4, 5],
-                    mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
+        testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
             obj = self._get_myledgerpal_obj()
             obj._initialize_bank()
-            self.assertEqual(testbank, obj._columns)
+            self.assertTrue(all(k in testbank for k in obj._columns.keys()))
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
-    def test__initialize_bank_missing_field(self, init_mock):
+    def test__initialize_bank_columns_missing_field(self, init_mock):
         self._print_func_name()
-        testbank = {mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM: 1,
-                    mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM: 3,
-                    mylpl.MyLedgerPal.BANK_COLNAME_DESC: [4, 5],
-                    mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
+        testbank = self._get_bank_definition()
+        testbank.pop(mylpl.MyLedgerPal.BANK_COLNAME_DATE)
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
             with self.assertRaises(Exception) as exception_ctx:
@@ -89,6 +93,69 @@ class TestMyLedgerPal(unittest.TestCase):
                 obj._initialize_bank()
             self.assertEqual("Column 'date' is not defined for bank 'RBC'",
                              exception_ctx.exception.message)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_no_encoding(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        testbank.pop(mylpl.MyLedgerPal.BANK_ENCODING)
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertFalse(obj._encoding)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_with_encoding(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual("utf-8", obj._encoding)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_no_quotechar(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        testbank.pop(mylpl.MyLedgerPal.BANK_QUOTE_CHAR)
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual('"', obj._quotechar)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_with_quotechar(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual("'", obj._quotechar)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_no_delimiter(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        testbank.pop(mylpl.MyLedgerPal.BANK_DELIMITER)
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual(",", obj._delimiter)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__initialize_bank_with_delimiter(self, init_mock):
+        self._print_func_name()
+        testbank = self._get_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual(":", obj._delimiter)
 
     # Functional Tests
     # ------------------------------------------------------------------------
@@ -149,6 +216,13 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertTrue(os.path.exists(expected))
         if os.path.exists(expected):
             os.remove(expected)
+
+    def test_run(self):
+        self._print_func_name(functest=True)
+        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+        app = mylpl.MyLedgerPal('RBC', input, output)
+        app.run()
 
 
 if __name__ == '__main__':

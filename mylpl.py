@@ -25,7 +25,7 @@ Github repo: https://github.com/syl20bnr/myledgerpal
 from docopt import docopt
 import os
 import shutil
-import re
+# import re
 import csv
 
 
@@ -47,6 +47,7 @@ def main():
                 o = os.path.splitext(args['<input>'])[0] + '.ledger'
             i = os.path.abspath(os.path.normpath(args['<input>']))
             app = MyLedgerPal(args['<bank>'], i, o)
+            app.run
     except Exception as e:
         if args['--debug']:
             import traceback
@@ -62,9 +63,15 @@ class MyLedgerPal(object):
     BANK_COLNAME_CHECK_NUM = 'check_num'
     BANK_COLNAME_DESC = 'desc'
     BANK_COLNAME_AMOUNT = 'amount'
+    BANK_ENCODING = 'encoding'
+    BANK_QUOTE_CHAR = 'quotechar'
+    BANK_DELIMITER = 'delimiter'
 
     BANKS = {
-        'RBC': {BANK_COLNAME_ACC_NUM: 1,
+        'RBC': {BANK_ENCODING: "ISO-8859-1",
+                BANK_QUOTE_CHAR: '"',
+                BANK_DELIMITER: ",",
+                BANK_COLNAME_ACC_NUM: 1,
                 BANK_COLNAME_DATE: 2,
                 BANK_COLNAME_CHECK_NUM: 3,
                 BANK_COLNAME_DESC: [4, 5],
@@ -117,6 +124,9 @@ class MyLedgerPal(object):
     def _initialize_bank(self):
         c = MyLedgerPal
         i = self._get_bank_colidx_definition(self._bank)
+        self._encoding = i.get(c.BANK_ENCODING, "")
+        self._quotechar = i.get(c.BANK_QUOTE_CHAR, '"')
+        self._delimiter = i.get(c.BANK_DELIMITER, ",")
         self._columns[c.BANK_COLNAME_ACC_NUM] = i.get(
             c.BANK_COLNAME_ACC_NUM, -1)
         self._columns[c.BANK_COLNAME_CHECK_NUM] = i.get(
@@ -129,6 +139,37 @@ class MyLedgerPal(object):
         for k, v in self._columns.items():
             if v == -1:
                 raise Exception(ERR_UNDEFINED_COLUMN.format(k, self._bank))
+
+    def _csv_reader(self, data, dialect=csv.excel, **kwargs):
+        # csv.py doesn't do Unicode; encode temporarily as UTF-8:
+        csv_reader = csv.reader(data, dialect=dialect, **kwargs)
+        for row in csv_reader:
+            # decode UTF-8 back to Unicode, cell by cell:
+            if self._encoding:
+                yield [unicode(cell, self._encoding) for cell in row]
+            else:
+                yield [cell for cell in row]
+
+    def run(self):
+        with open(self._output, 'w') as o:
+            with open(self._input, 'rb') as i:
+                self._run(i, o)
+
+    def _run(self, ictx, octx):
+        # write directives
+        octx.write('; -*- ledger -*-\n\n')
+        # write entries
+        reader = self._csv_reader(
+            ictx, delimiter=self._delimiter, quotechar=self._quotechar)
+        # skip header
+        reader.next()
+        for row in reader:
+            s = ','.join(row)
+            print s
+            if self._encoding:
+                octx.write(s.encode(self._encoding))
+            else:
+                octx.write(s)
 
 
 if __name__ == '__main__':
@@ -204,14 +245,6 @@ if __name__ == '__main__':
 #         lamount = len(self._amount)
 #         spacing = POST_AMOUNT_ALIGNMENT - (lacc + lamount)
 #         return spacing if spacing > 0 else 1
-
-
-# def unicode_csv_reader(unicode_csv_data, dialect=csv.excel, **kwargs):
-#     # csv.py doesn't do Unicode; encode temporarily as UTF-8:
-#     csv_reader = csv.reader(unicode_csv_data, dialect=dialect, **kwargs)
-#     for row in csv_reader:
-#         # decode UTF-8 back to Unicode, cell by cell:
-#         yield [unicode(cell, 'utf-8') for cell in row]
 
     # write_header(outputfile)
     # write_posts(outputfile)
