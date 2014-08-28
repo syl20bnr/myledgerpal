@@ -30,14 +30,19 @@ time then only the first encountered one will be processed.
 ** format
 {
     "accounts": {
-        "Liabilities:MasterCard": "000-000-0000",
+        "Liabilities:MasterCard": "111-111-1111",
         "Assets:Compte Joint RBC": "000-000-0000"
+    },
+    "aliases": {
+        "COSTCO WHOLESAL": "Costco",
+        "ELECTRONIC BO": "Electronic Box",
+        "HYDRO QUEBEC": "Hydro Quebec",
+        "I G A DES SOURC": "IGA"
     },
     "rules": {
         "Expenses:Alimentation:Courses": {
-            "IGA": 100,
-            "Walmart": 100,
-            "Costco": 100
+            "I G A DES SOURC": 100,
+            "COSTCO WHOLESAL": 100
         },
         "Expenses:Logement:Assurance":{
             "DESJ. ASS. GEN.": 40,
@@ -47,3 +52,15 @@ time then only the first encountered one will be processed.
         }
     }
  }
+** RBC example
+"Type de compte","Numéro du compte","Date de l'opération","Numéro du chèque","Description 1","Description 2","CAD","USD"
+Chèques,00335-5358353,4/28/2014,,"Paiement","PAIEMENT W3 - 4732 ELECTRONIC BO",-95.25,,
+Chèques,00335-5358353,4/28/2014,,"Paiement","PAIEMENT W3 - 7374 HYDRO QUEBEC ",-336.59,,
+Chèques,00335-5358353,5/1/2014,,"COSTCO ESSENCE","ACHAT PDI ---- 6765 ",-52.69,,
+Chèques,00335-5358353,5/1/2014,,"COSTCO WHOLESAL","ACHAT PDI ---- 2154 ",-96.32,,
+Chèques,00335-5358353,5/5/2014,,"VERSEMENT SUR HYP",,-756.38,,
+Chèques,00335-5358353,5/9/2014,000013,"CHEQUE No 013",,-60.00,,
+Chèques,00335-5358353,5/12/2014,,"ASSURANCE","DESJ. ASS. GEN. ",-143.42,,
+Chèques,00335-5358353,5/20/2014,,"I G A DES SOURC","ACHAT PDI ---- 0335 ",-86.82,,
+Chèques,00335-5358353,5/23/2014,,"FRAIS MENSUELS",,-10.95,,
+Chèques,00335-5358353,7/14/2014,,"CREDIT INTERNE",,46.00,,
