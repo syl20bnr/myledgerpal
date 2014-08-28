@@ -51,6 +51,16 @@ class TestMyLedgerPal(unittest.TestCase):
                 mylpl.MyLedgerPal.BANK_COLNAME_DESC: [4, 5],
                 mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
 
+    def _get_resources_data(self):
+        return {"accounts": {"Assets:Acc1": "000-000-0000",
+                             "Liabilites:Acc2": "111-111-1111"},
+                "aliases": {"SRC1": "Source1",
+                            "SRC2": "Source2",
+                            "SRC3": "Source3"},
+                "rules": {"Expenses:num1": {"SRC1": 100, "SRC2": 100},
+                          "Expenses:num2": {"SRC3": 40},
+                          "Expenses:num3": {"SRC3": 60}}}
+
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -157,6 +167,30 @@ class TestMyLedgerPal(unittest.TestCase):
             obj._initialize_bank()
             self.assertEqual(":", obj._delimiter)
 
+    def test_resource_load_accounts(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(2, res.get_account_count())
+        self.assertEqual("Assets:Acc1", res.get_ledger_account("000-000-0000"))
+        self.assertEqual("Liabilites:Acc2",
+                         res.get_ledger_account("111-111-1111"))
+
+    def test_resource_load_aliases(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(3, res.get_alias_count())
+        self.assertEqual("Source1", res.get_alias("SRC1"))
+        self.assertEqual("Source2", res.get_alias("SRC2"))
+        self.assertEqual("Source3", res.get_alias("SRC3"))
+
+    def test_resource_load_rules(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(3, res.get_rule_count())
+
     # Functional Tests
     # ------------------------------------------------------------------------
 
@@ -205,6 +239,7 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_backup_output(self):
         self._print_func_name(functest=True)
         input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
         expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak1")
         # be sure the backup file does not exist
         if os.path.exists(expected):
@@ -214,8 +249,20 @@ class TestMyLedgerPal(unittest.TestCase):
         print out
         print err
         self.assertTrue(os.path.exists(expected))
+        with open(output, 'r') as o:
+            with open(expected, 'r') as e:
+                self.assertEqual(o.read(), e.read())
         if os.path.exists(expected):
             os.remove(expected)
+
+    def test_load_resource(self):
+        self._print_func_name(functest=True)
+        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+        app = mylpl.MyLedgerPal('RBC', input, output)
+        self.assertEqual(2, app._resources.get_account_count())
+        self.assertEqual(4, app._resources.get_alias_count())
+        self.assertEqual(3, app._resources.get_rule_count())
 
     def test_run(self):
         self._print_func_name(functest=True)

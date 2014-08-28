@@ -25,13 +25,16 @@ Github repo: https://github.com/syl20bnr/myledgerpal
 from docopt import docopt
 import os
 import shutil
-# import re
 import csv
+import json
+# import re
 
 
 ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
 ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
 ERR_UNDEFINED_COLUMN = "Column '{0}' is not defined for bank '{1}'"
+
+RESOURCES_FILENAME = ".mylplrc"
 
 
 def main():
@@ -88,38 +91,36 @@ class MyLedgerPal(object):
             l.append(n)
         return os.linesep.join(l)
 
+    @staticmethod
+    def _get_resources_file_paths(output):
+        locs = [os.getcwd(), os.path.dirname(output)]
+        if "HOME" in os.environ:
+            locs.append(os.environ["HOME"])
+        return [os.path.join(loc, RESOURCES_FILENAME) for loc in locs]
+
     def __init__(self, bank, input, output):
         self._bank = bank
         self._input = input
         self._output = output
         self._columns = {}
+        self._encoding = ""
+        self._quotechar = '"'
+        self._delimiter = ","
+        self._resources = None
         self._initialize_params()
 
     def _initialize_params(self):
+        # error checks
         if self._bank not in MyLedgerPal.BANKS:
             raise Exception(ERR_BANK_UNKNOWN.format(self._bank))
         if not os.path.exists(self._input):
             raise Exception(ERR_INPUT_UNKNOWN)
+        # more initializations
         self._initialize_bank()
+        self._load_resources()
+        # additional behavior
         if os.path.exists(self._output):
             self._backup_output()
-
-    def _backup_output(self):
-        base = "{0}.bak".format(self._output)
-        i = 1
-        backup = "{0}{1}".format(base, str(i))
-        while os.path.exists(backup):
-            i += 1
-            backup = "{0}{1}".format(base, str(i))
-        shutil.copyfile(self._output, backup)
-        print("Backup file '{0}' has been created in {1}.".format(
-            os.path.basename(backup),
-            os.path.dirname(backup)
-        ))
-        return backup
-
-    def _get_bank_colidx_definition(self, bankname):
-        return MyLedgerPal.BANKS[bankname]
 
     def _initialize_bank(self):
         c = MyLedgerPal
@@ -135,10 +136,50 @@ class MyLedgerPal(object):
             c.BANK_COLNAME_AMOUNT, -1)
         self._columns[c.BANK_COLNAME_DESC] = i.get(c.BANK_COLNAME_DESC, -1)
         self._columns[c.BANK_COLNAME_DATE] = i.get(c.BANK_COLNAME_DATE, -1)
-        # for now we don't allow undefined field
+        # for now we don't allow undefined column indexes
         for k, v in self._columns.items():
             if v == -1:
                 raise Exception(ERR_UNDEFINED_COLUMN.format(k, self._bank))
+
+    def _load_resources(self):
+        ''' Resources are loaded from these locations:
+        - in the current working directory
+        - beside the location of the target ledger file
+        - in home
+        If the file is present in different places at the same
+        time then only the first encountered one will be processed.
+        '''
+        paths = MyLedgerPal._get_resources_file_paths(self._output)
+        data = None
+        i = 0
+        while data is None and i < len(paths):
+            data = self._get_resources_file_content(paths[i])
+            i += 1
+        if data:
+            self._resources = Resources.load(json.loads(data))
+
+    def _get_resources_file_content(self, path):
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return f.read()
+        else:
+            return None
+
+    def _backup_output(self):
+        base = "{0}.bak".format(self._output)
+        i = 1
+        backup = "{0}{1}".format(base, str(i))
+        while os.path.exists(backup):
+            i += 1
+            backup = "{0}{1}".format(base, str(i))
+        shutil.copyfile(self._output, backup)
+        print("Backup file '{0}' has been created in {1}.".format(
+            os.path.basename(backup),
+            os.path.dirname(backup)))
+        return backup
+
+    def _get_bank_colidx_definition(self, bankname):
+        return MyLedgerPal.BANKS[bankname]
 
     def _csv_reader(self, data, dialect=csv.excel, **kwargs):
         # csv.py doesn't do Unicode; encode temporarily as UTF-8:
@@ -151,7 +192,7 @@ class MyLedgerPal(object):
                 yield [cell for cell in row]
 
     def run(self):
-        with open(self._output, 'w') as o:
+        with open(self._output, 'a') as o:
             with open(self._input, 'rb') as i:
                 self._run(i, o)
 
@@ -164,12 +205,75 @@ class MyLedgerPal(object):
         # skip header
         reader.next()
         for row in reader:
-            s = ','.join(row)
-            print s
             if self._encoding:
-                octx.write(s.encode(self._encoding))
-            else:
-                octx.write(s)
+                data = row[self._columns[MyLedgerPal.BANK_COLNAME_DATE]]
+                octx.write(data.encode(self._encoding))
+            # else:
+            #     octx.write(s)
+
+
+class Resources(object):
+
+    def __init__(self, accounts, aliases, rules):
+        self._accounts = accounts
+        self._aliases = aliases
+        self._rules = rules
+
+    @staticmethod
+    def load(dct):
+        # for resources definition consistency, the ledger account is used a
+        # the hash key, in practice in the code we want the account number to
+        # be the key, so we reversed the dictionary
+        accounts = dct["accounts"]
+        rev_accounts = {v: k for k, v in accounts.items()}
+        # same thing for the rules
+        # we want the ledger account to be the key in the file because it
+        # makes the file a lot more easier to maintain, especially because
+        # it avoids a lot of redundancy. example:
+        #
+        # "Expenses:Alimentation:Courses": {
+        #     "I G A DES SOURC": 100,
+        #     "COSTCO WHOLESAL": 100
+        # },
+        #
+        # instead of
+        #
+        # "I G A DES SOURC": {"Expenses:Alimentation:Courses": 100},
+        # "COSTCO WHOLESAL": {"Expenses:Alimentation:Courses": 100},
+        #
+        # Note the ledger account which is duplicated.
+        #
+        # For practical reasons we want the information to be stored in memory
+        # with the description as the key instead of the edger account
+        rules = dct["rules"]
+        # TODO
+        rev_rules = rules
+        return Resources(rev_accounts, dct["aliases"], rev_rules)
+
+    def get_accounts(self):
+        return self._accounts
+
+    def get_account_count(self):
+        return len(self._accounts)
+
+    def get_ledger_account(self, number):
+        ''' Note, the number must be passed as a string. '''
+        return self._accounts.get(number, None)
+
+    def get_aliases(self):
+        return self._aliases
+
+    def get_alias_count(self):
+        return len(self._aliases)
+
+    def get_alias(self, desc):
+        return self._aliases.get(desc, desc)
+
+    def get_rules(self):
+        return self._rules
+
+    def get_rule_count(self):
+        return len(self._rules)
 
 
 if __name__ == '__main__':
