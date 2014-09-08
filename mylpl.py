@@ -204,12 +204,71 @@ class MyLedgerPal(object):
             ictx, delimiter=self._delimiter, quotechar=self._quotechar)
         # skip header
         reader.next()
-        for row in reader:
-            if self._encoding:
-                data = row[self._columns[MyLedgerPal.BANK_COLNAME_DATE]]
-                octx.write(data.encode(self._encoding))
-            # else:
-            #     octx.write(s)
+        posts = [self._create_post(row).write(octx) for row in reader]
+        print("Number of posts: {0}".format(len(posts)))
+
+    def _get_row_data(self, row, colname):
+        if type(self._columns[colname]) is list:
+            res = ""
+            for i in self._columns[colname]:
+                res += row[i]
+            return res
+        else:
+            return row[self._columns[colname]]
+
+    def _create_post(self, row):
+        accountnum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
+        date = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DATE)
+        checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
+        desc = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DESC)
+        amount = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_AMOUNT)
+        return Post(accountnum, date, checknum, desc, amount, self)
+
+
+class Post(object):
+
+    POST_ACCOUNT_ALIGNMENT = ' '*4
+    POST_AMOUNT_ALIGNMENT = 62
+
+    def __init__(self, accountnum, date, checknum, desc, amount, app):
+        self._anum = accountnum
+        self._account = 'account'
+        self._date = date
+        self._cnum = checknum
+        self._payee = desc
+        self._amount = amount.replace("-", "")
+        self._comment = ""
+        self._is_income = '-' not in amount
+        self._category = "toto"
+        self._app = app
+
+    def write(self, octx):
+        post = ''
+        if self._is_income:
+            post = self._account
+        else:
+            post = u'Expenses:{0}'.format(self._category)
+        a = self._compute_amount_alignment(post)
+        o = unicode(
+            '\n'
+            '{0} * {1}{2}\n'
+            '{3}{4}{5}{6}\n').format(
+                self._date, self._payee, self._comment,
+                Post.POST_ACCOUNT_ALIGNMENT, post, ' '*a, self._amount)
+        if self._is_income:
+            prefix = '' if self._category.startswith('Assets') else 'Income:'
+            o += u'{0}{1}\n'.format(Post.POST_ACCOUNT_ALIGNMENT,
+                                    u'{0}{1}'.format(prefix, self._category))
+        if self._app._encoding:
+            octx.write(o.encode(self._app._encoding))
+        else:
+            octx.write(o)
+
+    def _compute_amount_alignment(self, c):
+        lacc = len(Post.POST_ACCOUNT_ALIGNMENT + c)
+        lamount = len(self._amount)
+        spacing = Post.POST_AMOUNT_ALIGNMENT - (lacc + lamount)
+        return spacing if spacing > 0 else 1
 
 
 class Resources(object):
@@ -276,7 +335,6 @@ class Resources(object):
 
     def get_rule_count(self):
         return len(self._rules)
-
 
 if __name__ == '__main__':
     main()
