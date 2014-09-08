@@ -244,10 +244,13 @@ class Resources(object):
         # Note the ledger account which is duplicated.
         #
         # For practical reasons we want the information to be stored in memory
-        # with the description as the key instead of the edger account
+        # with the description as the key instead of the ledger account
         rules = dct["rules"]
-        # TODO
-        rev_rules = rules
+        rev_rules = {}
+        for k, v in rules.items():
+            for k1, v1 in v.items():
+                rev_rules[k1] = rev_rules.get(k1, {})
+                rev_rules[k1][k] = v1
         return Resources(rev_accounts, dct["aliases"], rev_rules)
 
     def get_accounts(self):

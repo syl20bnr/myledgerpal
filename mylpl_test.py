@@ -57,9 +57,9 @@ class TestMyLedgerPal(unittest.TestCase):
                 "aliases": {"SRC1": "Source1",
                             "SRC2": "Source2",
                             "SRC3": "Source3"},
-                "rules": {"Expenses:num1": {"SRC1": 100, "SRC2": 100},
-                          "Expenses:num2": {"SRC3": 40},
-                          "Expenses:num3": {"SRC3": 60}}}
+                "rules": {"Expenses:num1": {"Source1": 100, "Source2": 100},
+                          "Expenses:num2": {"Source3": 40},
+                          "Expenses:num3": {"Source3": 60}}}
 
     # Unit Tests
     # ------------------------------------------------------------------------
@@ -190,6 +190,11 @@ class TestMyLedgerPal(unittest.TestCase):
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(3, res.get_rule_count())
+        self.assertEqual(
+            {"Source1": {"Expenses:num1": 100},
+             "Source2": {"Expenses:num1": 100},
+             "Source3": {"Expenses:num2": 40, "Expenses:num3": 60}},
+            res.get_rules())
 
     # Functional Tests
     # ------------------------------------------------------------------------
