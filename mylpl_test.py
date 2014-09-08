@@ -52,8 +52,10 @@ class TestMyLedgerPal(unittest.TestCase):
                 mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
 
     def _get_resources_data(self):
-        return {"accounts": {"Assets:Acc1": "000-000-0000",
-                             "Liabilites:Acc2": "111-111-1111"},
+        return {"accounts": {"000-000-0000": {"account": "Assets:Acc1",
+                                              "currency": "CAD"},
+                             "111-111-1111": {"account": "Liabilites:Acc2",
+                                              "currency": "USD"}},
                 "aliases": {"SRC1": "Source1",
                             "SRC2": "Source2",
                             "SRC3": "Source3"},
@@ -175,6 +177,8 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual("Assets:Acc1", res.get_ledger_account("000-000-0000"))
         self.assertEqual("Liabilites:Acc2",
                          res.get_ledger_account("111-111-1111"))
+        self.assertEqual("CAD", res.get_currency("000-000-0000"))
+        self.assertEqual("USD", res.get_currency("111-111-1111"))
 
     def test_resource_load_aliases(self):
         self._print_func_name()

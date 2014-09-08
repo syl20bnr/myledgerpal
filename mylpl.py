@@ -221,12 +221,7 @@ class Resources(object):
 
     @staticmethod
     def load(dct):
-        # for resources definition consistency, the ledger account is used a
-        # the hash key, in practice in the code we want the account number to
-        # be the key, so we reversed the dictionary
         accounts = dct["accounts"]
-        rev_accounts = {v: k for k, v in accounts.items()}
-        # same thing for the rules
         # we want the ledger account to be the key in the file because it
         # makes the file a lot more easier to maintain, especially because
         # it avoids a lot of redundancy. example:
@@ -251,7 +246,7 @@ class Resources(object):
             for k1, v1 in v.items():
                 rev_rules[k1] = rev_rules.get(k1, {})
                 rev_rules[k1][k] = v1
-        return Resources(rev_accounts, dct["aliases"], rev_rules)
+        return Resources(accounts, dct["aliases"], rev_rules)
 
     def get_accounts(self):
         return self._accounts
@@ -259,9 +254,13 @@ class Resources(object):
     def get_account_count(self):
         return len(self._accounts)
 
-    def get_ledger_account(self, number):
-        ''' Note, the number must be passed as a string. '''
-        return self._accounts.get(number, None)
+    def get_ledger_account(self, accnumber):
+        ''' Note, the account number must be passed as a string. '''
+        return self._accounts[accnumber]["account"]
+
+    def get_currency(self, accnumber):
+        ''' Note, the account number must be passed as a string. '''
+        return self._accounts[accnumber]["currency"]
 
     def get_aliases(self):
         return self._aliases
