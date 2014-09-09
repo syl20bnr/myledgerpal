@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 import subprocess
 import os
@@ -93,6 +94,8 @@ class TestMyLedgerPal(unittest.TestCase):
     # Unit Tests
     # ------------------------------------------------------------------------
 
+    # ------------------------ MyLedgerPal -----------------------------
+
     @patch.object(shutil, "copyfile")
     @patch.object(mylpl.MyLedgerPal, "_print_backup_msg")
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
@@ -187,6 +190,38 @@ class TestMyLedgerPal(unittest.TestCase):
             obj = self._get_myledgerpal_obj()
             obj._initialize_bank()
             self.assertEqual(":", obj._delimiter)
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__get_row_data_bank_rbc(self, init_mock):
+        row1 = [u"Chèques",
+                u"00335-1234567",
+                u"5/5/2014",
+                u"",
+                u"VERSEMENT SUR HYP", u"",
+                u"-756.38", "", ""]
+        row2 = [u"Chèques",
+                u"00335-1234567",
+                u"5/5/2014",
+                u"",
+                u"VERSEMENT SUR HYP", u"OTHEQUE",
+                u"-756.38", "", ""]
+        testbank = self._get_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual(u"00335-1234567", obj._get_row_data(
+                row1, mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM))
+            self.assertEqual(u"5/5/2014", obj._get_row_data(
+                row1, mylpl.MyLedgerPal.BANK_COLNAME_DATE))
+            self.assertEqual(u"VERSEMENT SUR HYP", obj._get_row_data(
+                row1, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
+            self.assertEqual(u"VERSEMENT SUR HYP OTHEQUE", obj._get_row_data(
+                row2, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
+            self.assertEqual(u"", obj._get_row_data(
+                row1, mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM))
+            self.assertEqual(u"-756.38", obj._get_row_data(
+                row1, mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT))
 
     # ------------------------ Resources -----------------------------
 

@@ -214,7 +214,11 @@ class MyLedgerPal(object):
         if type(self._columns[colname]) is list:
             res = ""
             for i in self._columns[colname]:
-                res += row[i]
+                # concatenate all the columns with a space delimiter
+                if res and row[i]:
+                    res = " ".join([res, row[i]])
+                elif row[i]:
+                    res = row[i]
             return res
         else:
             return row[self._columns[colname]]
