@@ -94,8 +94,9 @@ class TestMyLedgerPal(unittest.TestCase):
     # ------------------------------------------------------------------------
 
     @patch.object(shutil, "copyfile")
+    @patch.object(mylpl.MyLedgerPal, "_print_backup_msg")
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
-    def test__backup_output(self, init_mock, copy_mock):
+    def test__backup_output(self, init_mock, print_mock, copy_mock):
         @static_var("exist_counter", 0)
         def mocked_exists(self):
             mocked_exists.exist_counter += 1
@@ -103,7 +104,6 @@ class TestMyLedgerPal(unittest.TestCase):
                 return True
             else:
                 return False
-        self._print_func_name()
         expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak5")
         with patch.object(os.path, "exists", mocked_exists):
             obj = self._get_myledgerpal_obj()
@@ -112,7 +112,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_columns(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
@@ -122,7 +121,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_columns_missing_field(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         testbank.pop(mylpl.MyLedgerPal.BANK_COLNAME_DATE)
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
@@ -135,7 +133,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_no_encoding(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         testbank.pop(mylpl.MyLedgerPal.BANK_ENCODING)
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
@@ -146,7 +143,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_with_encoding(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
@@ -156,7 +152,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_no_quotechar(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         testbank.pop(mylpl.MyLedgerPal.BANK_QUOTE_CHAR)
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
@@ -167,7 +162,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_with_quotechar(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
@@ -177,7 +171,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_no_delimiter(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         testbank.pop(mylpl.MyLedgerPal.BANK_DELIMITER)
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
@@ -188,7 +181,6 @@ class TestMyLedgerPal(unittest.TestCase):
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_with_delimiter(self, init_mock):
-        self._print_func_name()
         testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
@@ -199,20 +191,17 @@ class TestMyLedgerPal(unittest.TestCase):
     # ------------------------ Resources -----------------------------
 
     def test_resource_load_with_accounts_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(2, res.get_account_count())
 
     def test_resource_load_no_account_in_data(
             self):
-        self._print_func_name()
         dct = self._get_resources_data_no_account()
         res = mylpl.Resources.load(dct)
         self.assertEqual(0, res.get_account_count())
 
     def test_resource_get_ledger_account_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual("Assets:Acc1", res.get_ledger_account("000-000-0000"))
@@ -220,7 +209,6 @@ class TestMyLedgerPal(unittest.TestCase):
                          res.get_ledger_account("111-111-1111"))
 
     def test_resource_get_ledger_account_no_account_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_account()
         res = mylpl.Resources.load(dct)
         self.assertEqual(
@@ -229,7 +217,6 @@ class TestMyLedgerPal(unittest.TestCase):
             "111-111-1111", res.get_ledger_account("111-111-1111"))
 
     def test_resource_get_ledger_account_no_ledger_account_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_ledger_account()
         res = mylpl.Resources.load(dct)
         self.assertEqual(
@@ -238,14 +225,12 @@ class TestMyLedgerPal(unittest.TestCase):
             "111-111-1111", res.get_ledger_account("111-111-1111"))
 
     def test_resource_get_ledger_account_get_currency(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual("CAD", res.get_currency("000-000-0000"))
         self.assertEqual("USD", res.get_currency("111-111-1111"))
 
     def test_resource_get_ledger_account_get_currency_no_account_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_account()
         res = mylpl.Resources.load(dct)
         self.assertEqual("$", res.get_currency("000-000-0000"))
@@ -253,26 +238,22 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_get_ledger_account_get_currency_no_currency_in_data(
             self):
-        self._print_func_name()
         dct = self._get_resources_data_no_currency()
         res = mylpl.Resources.load(dct)
         self.assertEqual("$", res.get_currency("000-000-0000"))
         self.assertEqual("$", res.get_currency("111-111-1111"))
 
     def test_resource_load_with_aliases_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(3, res.get_alias_count())
 
     def test_resource_load_with_no_alias_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_alias()
         res = mylpl.Resources.load(dct)
         self.assertEqual(0, res.get_alias_count())
 
     def test_resource_get_aliases_with_aliases_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual("Source1", res.get_alias("SRC1"))
@@ -280,7 +261,6 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual("Source3", res.get_alias("SRC3"))
 
     def test_resource_get_aliases_with_no_alias_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_alias()
         res = mylpl.Resources.load(dct)
         self.assertEqual("SRC1", res.get_alias("SRC1"))
@@ -288,19 +268,16 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual("SRC3", res.get_alias("SRC3"))
 
     def test_resource_load_with_rules_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(3, res.get_rule_count())
 
     def test_resource_load_with_no_rule_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_rule()
         res = mylpl.Resources.load(dct)
         self.assertEqual(0, res.get_rule_count())
 
     def test_resource_get_rules_with_rules_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(
@@ -310,13 +287,11 @@ class TestMyLedgerPal(unittest.TestCase):
             res.get_rules())
 
     def test_resource_get_rules_with_no_rule_in_data(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_rule()
         res = mylpl.Resources.load(dct)
         self.assertEqual({}, res.get_rules())
 
     def test_resource_get_payee(self):
-        self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual("Source1", res.get_payee("SRC1"))
@@ -324,7 +299,6 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual("Source3", res.get_payee("SRC3"))
 
     def test_resource_get_payee_with_no_alias(self):
-        self._print_func_name()
         dct = self._get_resources_data_no_alias()
         res = mylpl.Resources.load(dct)
         self.assertEqual("SRC1", res.get_payee("SRC1"))

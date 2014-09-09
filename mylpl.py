@@ -173,10 +173,13 @@ class MyLedgerPal(object):
             i += 1
             backup = "{0}{1}".format(base, str(i))
         shutil.copyfile(self._output, backup)
+        self._print_backup_msg(backup)
+        return backup
+
+    def _print_backup_msg(self, backup):
         print("Backup file '{0}' has been created in {1}.".format(
             os.path.basename(backup),
             os.path.dirname(backup)))
-        return backup
 
     def _get_bank_colidx_definition(self, bankname):
         return MyLedgerPal.BANKS[bankname]
