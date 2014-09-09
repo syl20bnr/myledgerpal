@@ -280,7 +280,8 @@ class Resources(object):
 
     @staticmethod
     def load(dct):
-        accounts = dct["accounts"]
+        accounts = dct.get("accounts", {})
+        aliases = dct.get("aliases", {})
         # we want the ledger account to be the key in the file because it
         # makes the file a lot more easier to maintain, especially because
         # it avoids a lot of redundancy. example:
@@ -299,13 +300,13 @@ class Resources(object):
         #
         # For practical reasons we want the information to be stored in memory
         # with the description as the key instead of the ledger account
-        rules = dct["rules"]
+        rules = dct.get("rules", {})
         rev_rules = {}
         for k, v in rules.items():
             for k1, v1 in v.items():
                 rev_rules[k1] = rev_rules.get(k1, {})
                 rev_rules[k1][k] = v1
-        return Resources(accounts, dct["aliases"], rev_rules)
+        return Resources(accounts, aliases, rev_rules)
 
     def get_accounts(self):
         return self._accounts
@@ -315,11 +316,20 @@ class Resources(object):
 
     def get_ledger_account(self, accnumber):
         ''' Note, the account number must be passed as a string. '''
-        return self._accounts[accnumber]["account"]
+        if accnumber in self._accounts:
+            return self._accounts[accnumber].get("account", accnumber)
+        else:
+            return accnumber
 
     def get_currency(self, accnumber):
         ''' Note, the account number must be passed as a string. '''
-        return self._accounts[accnumber]["currency"]
+        if accnumber in self._accounts:
+            return self._accounts[accnumber].get("currency", "$")
+        else:
+            return "$"
+
+    def get_payee(self, desc):
+        return self._aliases.get(desc, desc)
 
     def get_aliases(self):
         return self._aliases

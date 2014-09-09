@@ -63,6 +63,33 @@ class TestMyLedgerPal(unittest.TestCase):
                           "Expenses:num2": {"Source3": 40},
                           "Expenses:num3": {"Source3": 60}}}
 
+    def _get_resources_data_no_account(self):
+        res = self._get_resources_data()
+        res.pop("accounts")
+        return res
+
+    def _get_resources_data_no_ledger_account(self):
+        res = self._get_resources_data()
+        res["accounts"]["000-000-0000"].pop("account")
+        res["accounts"]["111-111-1111"].pop("account")
+        return res
+
+    def _get_resources_data_no_currency(self):
+        res = self._get_resources_data()
+        res["accounts"]["000-000-0000"].pop("currency")
+        res["accounts"]["111-111-1111"].pop("currency")
+        return res
+
+    def _get_resources_data_no_alias(self):
+        res = self._get_resources_data()
+        res.pop("aliases")
+        return res
+
+    def _get_resources_data_no_rule(self):
+        res = self._get_resources_data()
+        res.pop("rules")
+        return res
+
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -169,37 +196,140 @@ class TestMyLedgerPal(unittest.TestCase):
             obj._initialize_bank()
             self.assertEqual(":", obj._delimiter)
 
-    def test_resource_load_accounts(self):
+    # ------------------------ Resources -----------------------------
+
+    def test_resource_load_with_accounts_in_data(self):
         self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(2, res.get_account_count())
+
+    def test_resource_load_no_account_in_data(
+            self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_account()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(0, res.get_account_count())
+
+    def test_resource_get_ledger_account_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
         self.assertEqual("Assets:Acc1", res.get_ledger_account("000-000-0000"))
         self.assertEqual("Liabilites:Acc2",
                          res.get_ledger_account("111-111-1111"))
+
+    def test_resource_get_ledger_account_no_account_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_account()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(
+            "000-000-0000", res.get_ledger_account("000-000-0000"))
+        self.assertEqual(
+            "111-111-1111", res.get_ledger_account("111-111-1111"))
+
+    def test_resource_get_ledger_account_no_ledger_account_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_ledger_account()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(
+            "000-000-0000", res.get_ledger_account("000-000-0000"))
+        self.assertEqual(
+            "111-111-1111", res.get_ledger_account("111-111-1111"))
+
+    def test_resource_get_ledger_account_get_currency(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
         self.assertEqual("CAD", res.get_currency("000-000-0000"))
         self.assertEqual("USD", res.get_currency("111-111-1111"))
 
-    def test_resource_load_aliases(self):
+    def test_resource_get_ledger_account_get_currency_no_account_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_account()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual("$", res.get_currency("000-000-0000"))
+        self.assertEqual("$", res.get_currency("111-111-1111"))
+
+    def test_resource_get_ledger_account_get_currency_no_currency_in_data(
+            self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_currency()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual("$", res.get_currency("000-000-0000"))
+        self.assertEqual("$", res.get_currency("111-111-1111"))
+
+    def test_resource_load_with_aliases_in_data(self):
         self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(3, res.get_alias_count())
+
+    def test_resource_load_with_no_alias_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_alias()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(0, res.get_alias_count())
+
+    def test_resource_get_aliases_with_aliases_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
         self.assertEqual("Source1", res.get_alias("SRC1"))
         self.assertEqual("Source2", res.get_alias("SRC2"))
         self.assertEqual("Source3", res.get_alias("SRC3"))
 
-    def test_resource_load_rules(self):
+    def test_resource_get_aliases_with_no_alias_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_alias()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual("SRC1", res.get_alias("SRC1"))
+        self.assertEqual("SRC2", res.get_alias("SRC2"))
+        self.assertEqual("SRC3", res.get_alias("SRC3"))
+
+    def test_resource_load_with_rules_in_data(self):
         self._print_func_name()
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
         self.assertEqual(3, res.get_rule_count())
+
+    def test_resource_load_with_no_rule_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_rule()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual(0, res.get_rule_count())
+
+    def test_resource_get_rules_with_rules_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
         self.assertEqual(
             {"Source1": {"Expenses:num1": 100},
              "Source2": {"Expenses:num1": 100},
              "Source3": {"Expenses:num2": 40, "Expenses:num3": 60}},
             res.get_rules())
 
+    def test_resource_get_rules_with_no_rule_in_data(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_rule()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual({}, res.get_rules())
+
+    def test_resource_get_payee(self):
+        self._print_func_name()
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual("Source1", res.get_payee("SRC1"))
+        self.assertEqual("Source2", res.get_payee("SRC2"))
+        self.assertEqual("Source3", res.get_payee("SRC3"))
+
+    def test_resource_get_payee_with_no_alias(self):
+        self._print_func_name()
+        dct = self._get_resources_data_no_alias()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual("SRC1", res.get_payee("SRC1"))
+        self.assertEqual("SRC2", res.get_payee("SRC2"))
+        self.assertEqual("SRC3", res.get_payee("SRC3"))
     # Functional Tests
     # ------------------------------------------------------------------------
 
@@ -245,40 +375,40 @@ class TestMyLedgerPal(unittest.TestCase):
         print err
         self.assertTrue("Usage:" in err)
 
-    def test_backup_output(self):
-        self._print_func_name(functest=True)
-        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-        expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak1")
-        # be sure the backup file does not exist
-        if os.path.exists(expected):
-            os.remove(expected)
-        p = self._spawn_process(["python", MYPL_SCRIPT, "RBC", input])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue(os.path.exists(expected))
-        with open(output, 'r') as o:
-            with open(expected, 'r') as e:
-                self.assertEqual(o.read(), e.read())
-        if os.path.exists(expected):
-            os.remove(expected)
+    # def test_backup_output(self):
+    #     self._print_func_name(functest=True)
+    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+    #     expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak1")
+    #     # be sure the backup file does not exist
+    #     if os.path.exists(expected):
+    #         os.remove(expected)
+    #     p = self._spawn_process(["python", MYPL_SCRIPT, "RBC", input])
+    #     out, err = p.communicate()
+    #     print out
+    #     print err
+    #     self.assertTrue(os.path.exists(expected))
+    #     with open(output, 'r') as o:
+    #         with open(expected, 'r') as e:
+    #             self.assertEqual(o.read(), e.read())
+    #     if os.path.exists(expected):
+    #         os.remove(expected)
 
-    def test_load_resource(self):
-        self._print_func_name(functest=True)
-        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-        app = mylpl.MyLedgerPal('RBC', input, output)
-        self.assertEqual(2, app._resources.get_account_count())
-        self.assertEqual(4, app._resources.get_alias_count())
-        self.assertEqual(3, app._resources.get_rule_count())
+    # def test_load_resource(self):
+    #     self._print_func_name(functest=True)
+    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+    #     app = mylpl.MyLedgerPal('RBC', input, output)
+    #     self.assertEqual(2, app._resources.get_account_count())
+    #     self.assertEqual(4, app._resources.get_alias_count())
+    #     self.assertEqual(3, app._resources.get_rule_count())
 
-    def test_run(self):
-        self._print_func_name(functest=True)
-        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-        app = mylpl.MyLedgerPal('RBC', input, output)
-        app.run()
+    # def test_run(self):
+    #     self._print_func_name(functest=True)
+    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+    #     app = mylpl.MyLedgerPal('RBC', input, output)
+    #     app.run()
 
 
 if __name__ == '__main__':
