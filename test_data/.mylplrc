@@ -1,0 +1,31 @@
+{
+    "accounts": {
+        "111-111-11111": {"account": "Liabilities:MasterCard",
+                          "currency": "$"},
+        "00335-1234567": {"account": "Assets:Compte Joint RBC",
+                          "currency": "$"}
+    },
+    "aliases": {
+        "COSTCO WHOLESAL": "Costco",
+        "COSTCO ESSENCE": "Essence (Costco)",
+        "ELECTRONIC BO": "Electronic Box",
+        "HYDRO QUEBEC": "Hydro Quebec",
+        "VERSEMENT SUR HYP": "Hypotheque",
+        "I G A DES SOURC": "IGA",
+        "FRAIS MENSUELS": "Frais Bancaires",
+        "CREDIT INTERNE": "Remboursement Banque",
+        "DESJ. ASS. GEN.": "Assurances Desjardins"
+    },
+    "rules": {
+        "Expenses:Alimentation:Courses": {
+            "IGA": 100,
+            "Costco": 100
+        },
+        "Expenses:Logement:Assurance":{
+            "Assurances Desjardins": 40
+        },
+        "Expenses:Transports:Voiture:Assurance":{
+            "Assurances Desjardins": 60
+        }
+    }
+}
