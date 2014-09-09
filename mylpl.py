@@ -27,6 +27,7 @@ import os
 import shutil
 import csv
 import json
+import re
 # import re
 
 
@@ -108,6 +109,11 @@ class MyLedgerPal(object):
         self._delimiter = ","
         self._resources = None
         self._initialize_params()
+
+    def run(self):
+        with open(self._output, 'a') as o:
+            with open(self._input, 'rb') as i:
+                self._run(i, o)
 
     def _initialize_params(self):
         # error checks
@@ -194,11 +200,6 @@ class MyLedgerPal(object):
             else:
                 yield [cell for cell in row]
 
-    def run(self):
-        with open(self._output, 'a') as o:
-            with open(self._input, 'rb') as i:
-                self._run(i, o)
-
     def _run(self, ictx, octx):
         # write directives
         octx.write('; -*- ledger -*-\n\n')
@@ -229,7 +230,12 @@ class MyLedgerPal(object):
         checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
         desc = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DESC)
         amount = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_AMOUNT)
-        return Post(accountnum, date, checknum, desc, amount, self)
+        return Post(self._resources.get_ledger_account(accountnum),
+                    self._resources.get_currency(accountnum),
+                    date, checknum,
+                    self._resources.get_payee(desc),
+                    amount,
+                    self)
 
 
 class Post(object):
@@ -237,14 +243,14 @@ class Post(object):
     POST_ACCOUNT_ALIGNMENT = ' '*4
     POST_AMOUNT_ALIGNMENT = 62
 
-    def __init__(self, accountnum, date, checknum, desc, amount, app):
-        self._anum = accountnum
-        self._account = 'account'
+    def __init__(self, account, currency, date, checknum, payee, amount, app):
+        self._account = account
+        self._currency = currency
         self._date = date
         self._cnum = checknum
-        self._payee = desc
-        self._amount = amount.replace("-", "")
+        self._payee = payee
         self._comment = ""
+        self._amount = self._format_amount(amount)
         self._is_income = '-' not in amount
         self._category = "toto"
         self._app = app
@@ -270,6 +276,15 @@ class Post(object):
             octx.write(o.encode(self._app._encoding))
         else:
             octx.write(o)
+
+    def _format_amount(self, a):
+        fa = a.replace('-', '').replace(',', '.').replace(unichr(160), ',')
+        if '.' not in fa:
+            fa += '.00'
+        if re.match(r'^[a-zA-Z]+$', self._currency):
+            return '{0} {1}'.format(fa, self._currency)
+        else:
+            return '{0} {1}'.format(self._currency, fa)
 
     def _compute_amount_alignment(self, c):
         lacc = len(Post.POST_ACCOUNT_ALIGNMENT + c)
@@ -336,7 +351,10 @@ class Resources(object):
             return "$"
 
     def get_payee(self, desc):
-        return self._aliases.get(desc, desc)
+        for k in self._aliases.keys():
+            if k in desc:
+                return self._aliases[k]
+        return desc
 
     def get_aliases(self):
         return self._aliases
