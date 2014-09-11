@@ -91,6 +91,15 @@ class TestMyLedgerPal(unittest.TestCase):
         res.pop("rules")
         return res
 
+    def _get_post(self):
+        return mylpl.Post({"Assets:MyAccount": 100},
+                          "$",
+                          "9/9/9999",
+                          "01",
+                          "Payee",
+                          {"Expenses:Payee": 100},
+                          -100)
+
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -333,12 +342,100 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual("Source2", res.get_payee("SRC2"))
         self.assertEqual("Source3", res.get_payee("SRC3"))
 
-    def test_resource_get_payee_with_no_alias(self):
+    def test_resource_get_payee_with_no_alias_in_data(self):
         dct = self._get_resources_data_no_alias()
         res = mylpl.Resources.load(dct)
         self.assertEqual("SRC1", res.get_payee("SRC1"))
         self.assertEqual("SRC2", res.get_payee("SRC2"))
         self.assertEqual("SRC3", res.get_payee("SRC3"))
+
+    def test_resource_get_payee_account(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual({"Expenses:num1": 100},
+                         res.get_payee_account("Source1"))
+        self.assertEqual({"Expenses:num1": 100},
+                         res.get_payee_account("Source2"))
+        self.assertEqual({"Expenses:num2": 40, "Expenses:num3": 60},
+                         res.get_payee_account("Source3"))
+
+    def test_resource_get_payee_account_with_no_rule_in_data(self):
+        dct = self._get_resources_data_no_rule()
+        res = mylpl.Resources.load(dct)
+        self.assertEqual({"Expenses:Unknown": 100},
+                         res.get_payee_account("Source1"))
+        self.assertEqual({"Expenses:Unknown": 100},
+                         res.get_payee_account("Source2"))
+        self.assertEqual({"Expenses:Unknown": 100},
+                         res.get_payee_account("Source3"))
+
+    # ------------------------ Post -----------------------------
+
+    def test_post__get_adjusted_amount_positive_100(self):
+        self.assertEqual("50.00", mylpl.Post._get_adjusted_amount(100, 50))
+
+    def test_post__get_adjusted_amount_0(self):
+        self.assertEqual("0.00", mylpl.Post._get_adjusted_amount(100, 0))
+
+    def test_post__get_adjusted_amount_negative_100(self):
+        self.assertEqual("50.00", mylpl.Post._get_adjusted_amount(-100, 50))
+
+    def test_post__format_amount_dollar(self):
+        self.assertEqual("$ 25.00", mylpl.Post._format_amount(-50, 50, "$"))
+
+    def test_post__format_amount_usd(self):
+        self.assertEqual("10.00 USD", mylpl.Post._format_amount(200, 5, "USD"))
+
+    def test_post__compute_amount_alignment(self):
+        post = self._get_post()
+        res = post._compute_amount_alignment("Expenses:Payee", 100)
+        self.assertEqual(36, res)
+
+    def test_post__compute_amount_alignment_negative_amount(self):
+        post = self._get_post()
+        post._amount = -100
+        res = post._compute_amount_alignment("Expenses:Payee", 50)
+        self.assertEqual(37, res)
+
+    def test_post__compute_amount_alignment_cad(self):
+        post = self._get_post()
+        post._currency = "CAD"
+        res = post._compute_amount_alignment("Expenses:Payee", 50)
+        self.assertEqual(35, res)
+
+    def test_post__format_payee_accounts_negative_amount(self):
+        post = self._get_post()
+        self.assertEqual(u"    Expenses:Payee             "
+                         u"                       $ 100.00",
+                         post._format_payee_accounts())
+
+    def test_post__format_payee_accounts_positive_amount(self):
+        post = self._get_post()
+        post._amount = abs(post._amount)
+        self.assertEqual("    Assets:MyAccount           "
+                         "                       $ 100.00",
+                         post._format_payee_accounts())
+
+    def test_post__format_balance_account_negative_amount(self):
+        post = self._get_post()
+        self.assertEqual(u"    Assets:MyAccount",
+                         post._format_balance_account())
+
+    def test_post__format_balance_account_positive_amount(self):
+        post = self._get_post()
+        post._amount = abs(post._amount)
+        self.assertEqual(u"    Expenses:Payee",
+                         post._format_balance_account())
+
+    def test_post___str__(self):
+        post = self._get_post()
+        self.assertEqual(
+            u"\n"
+            u"9/9/9999 * Payee\n"
+            u"    Expenses:Payee                                    $ 100.00\n"
+            u"    Assets:MyAccount\n",
+            unicode(post))
+
     # Functional Tests
     # ------------------------------------------------------------------------
 
@@ -412,12 +509,12 @@ class TestMyLedgerPal(unittest.TestCase):
     #     self.assertEqual(4, app._resources.get_alias_count())
     #     self.assertEqual(3, app._resources.get_rule_count())
 
-    # def test_run(self):
-    #     self._print_func_name(functest=True)
-    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-    #     app = mylpl.MyLedgerPal('RBC', input, output)
-    #     app.run()
+    def test_run(self):
+        self._print_func_name(functest=True)
+        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+        app = mylpl.MyLedgerPal('RBC', input, output)
+        app.run()
 
 
 if __name__ == '__main__':

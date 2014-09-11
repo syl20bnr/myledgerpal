@@ -208,7 +208,8 @@ class MyLedgerPal(object):
             ictx, delimiter=self._delimiter, quotechar=self._quotechar)
         # skip header
         reader.next()
-        posts = [self._create_post(row).write(octx) for row in reader]
+        posts = [self._write_post(self._create_post(row), octx)
+                 for row in reader]
         print("Number of posts: {0}".format(len(posts)))
 
     def _get_row_data(self, row, colname):
@@ -225,17 +226,26 @@ class MyLedgerPal(object):
             return row[self._columns[colname]]
 
     def _create_post(self, row):
-        accountnum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
+        acc_num = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
         date = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DATE)
         checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
         desc = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DESC)
+        payee = self._resources.get_payee(desc)
         amount = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_AMOUNT)
-        return Post(self._resources.get_ledger_account(accountnum),
-                    self._resources.get_currency(accountnum),
-                    date, checknum,
-                    self._resources.get_payee(desc),
-                    amount,
-                    self)
+        return Post(self._resources.get_ledger_account(acc_num),
+                    self._resources.get_currency(acc_num),
+                    date,
+                    checknum,
+                    payee,
+                    self._resources.get_payee_account(payee),
+                    float(amount))
+
+    def _write_post(self, post, octx):
+        if self._encoding:
+            octx.write(str(post).encode(self._encoding))
+        else:
+            octx.write(str(post))
+        return post
 
 
 class Post(object):
@@ -243,54 +253,69 @@ class Post(object):
     POST_ACCOUNT_ALIGNMENT = ' '*4
     POST_AMOUNT_ALIGNMENT = 62
 
-    def __init__(self, account, currency, date, checknum, payee, amount, app):
+    @staticmethod
+    def _get_adjusted_amount(amount, percent):
+        return "{0:.2f}".format(abs(amount)*percent/100)
+
+    @staticmethod
+    def _format_amount(amount, percent, currency):
+        aa = Post._get_adjusted_amount(amount, percent)
+        if re.match(r'^[a-zA-Z]+$', currency):
+            return '{0} {1}'.format(aa, currency)
+        else:
+            return '{0} {1}'.format(currency, aa)
+
+    def __init__(self,
+                 account,
+                 currency,
+                 date,
+                 checknum,
+                 payee,
+                 payee_accounts,
+                 amount):
         self._account = account
         self._currency = currency
         self._date = date
         self._cnum = checknum
         self._payee = payee
+        self._payee_accounts = payee_accounts
         self._comment = ""
-        self._amount = self._format_amount(amount)
-        self._is_income = '-' not in amount
-        self._category = "toto"
-        self._app = app
+        self._amount = amount
 
-    def write(self, octx):
-        post = ''
-        if self._is_income:
-            post = self._account
-        else:
-            post = u'Expenses:{0}'.format(self._category)
-        a = self._compute_amount_alignment(post)
-        o = unicode(
+    def __str__(self):
+        return unicode(
             '\n'
             '{0} * {1}{2}\n'
-            '{3}{4}{5}{6}\n').format(
+            '{3}\n'
+            '{4}\n').format(
                 self._date, self._payee, self._comment,
-                Post.POST_ACCOUNT_ALIGNMENT, post, ' '*a, self._amount)
-        if self._is_income:
-            prefix = '' if self._category.startswith('Assets') else 'Income:'
-            o += u'{0}{1}\n'.format(Post.POST_ACCOUNT_ALIGNMENT,
-                                    u'{0}{1}'.format(prefix, self._category))
-        if self._app._encoding:
-            octx.write(o.encode(self._app._encoding))
-        else:
-            octx.write(o)
+                self._format_payee_accounts(),
+                self._format_balance_account())
 
-    def _format_amount(self, a):
-        fa = a.replace('-', '').replace(',', '.').replace(unichr(160), ',')
-        if '.' not in fa:
-            fa += '.00'
-        if re.match(r'^[a-zA-Z]+$', self._currency):
-            return '{0} {1}'.format(fa, self._currency)
-        else:
-            return '{0} {1}'.format(self._currency, fa)
-
-    def _compute_amount_alignment(self, c):
-        lacc = len(Post.POST_ACCOUNT_ALIGNMENT + c)
-        lamount = len(self._amount)
+    def _compute_amount_alignment(self, account, percent):
+        lacc = len(Post.POST_ACCOUNT_ALIGNMENT + account)
+        lamount = len(Post._format_amount(
+            self._amount, percent, self._currency))
         spacing = Post.POST_AMOUNT_ALIGNMENT - (lacc + lamount)
         return spacing if spacing > 0 else 1
+
+    def _format_payee_accounts(self):
+        acc = self._account if self._amount >= 0 else self._payee_accounts
+        formatted = [(lambda account, percent:
+                      unicode('{0}{1}{2}{3}'.format(
+                          Post.POST_ACCOUNT_ALIGNMENT,
+                          account,
+                          ' '*self._compute_amount_alignment(account, percent),
+                          Post._format_amount(self._amount, percent,
+                                              self._currency))))(k, v)
+                     for k, v in acc.items()]
+        return '\n'.join(formatted)
+
+    def _format_balance_account(self):
+        acc = self._account if self._amount < 0 else self._payee_accounts
+        # TODO: take into account multiple payee accounts
+        return unicode('{0}{1}'.format(Post.POST_ACCOUNT_ALIGNMENT,
+                                       acc.keys()[0]))
 
 
 class Resources(object):
@@ -338,10 +363,12 @@ class Resources(object):
 
     def get_ledger_account(self, accnumber):
         ''' Note, the account number must be passed as a string. '''
+        acc = ''
         if accnumber in self._accounts:
-            return self._accounts[accnumber].get("account", accnumber)
+            acc = self._accounts[accnumber].get("account", accnumber)
         else:
-            return accnumber
+            acc = 'Assets:{0}'.format(accnumber)
+        return {acc: 100}
 
     def get_currency(self, accnumber):
         ''' Note, the account number must be passed as a string. '''
@@ -355,6 +382,12 @@ class Resources(object):
             if k in desc:
                 return self._aliases[k]
         return desc
+
+    def get_payee_account(self, payee):
+        for k in self._rules.keys():
+            if k == payee:
+                return self._rules[k]
+        return {"Expenses:Unknown": 100}
 
     def get_aliases(self):
         return self._aliases
