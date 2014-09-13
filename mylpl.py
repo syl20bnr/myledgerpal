@@ -258,12 +258,13 @@ class Post(object):
         return "{0:.2f}".format(abs(amount)*percent/100)
 
     @staticmethod
-    def _format_amount(amount, percent, currency):
+    def _format_amount(amount, percent, currency, balance=False):
         aa = Post._get_adjusted_amount(amount, percent)
-        if re.match(r'^[a-zA-Z]+$', currency):
-            return '{0} {1}'.format(aa, currency)
+        sign = "" if not balance else "-"
+        if re.match(r"^[a-zA-Z]+$", currency):
+            return "{0} {1}{2}".format(aa, sign, currency)
         else:
-            return '{0} {1}'.format(currency, aa)
+            return "{0} {1}{2}".format(currency, sign, aa)
 
     def __init__(self,
                  account,
@@ -292,17 +293,18 @@ class Post(object):
                 self._format_payee_accounts(),
                 self._format_balance_account())
 
-    def _compute_amount_alignment(self, account, percent):
+    def _compute_amount_alignment(self, account, percent, balance=False):
         lacc = len(Post.POST_ACCOUNT_ALIGNMENT + account)
-        lamount = len(Post._format_amount(
-            self._amount, percent, self._currency))
+        amount = self._amount if not balance else -self._amount
+        lamount = len(Post._format_amount(amount, percent,
+                                          self._currency, balance))
         spacing = Post.POST_AMOUNT_ALIGNMENT - (lacc + lamount)
         return spacing if spacing > 0 else 1
 
     def _format_payee_accounts(self):
         acc = self._account if self._amount >= 0 else self._payee_accounts
         formatted = [(lambda account, percent:
-                      unicode('{0}{1}{2}{3}'.format(
+                      unicode("{0}{1}{2}{3}".format(
                           Post.POST_ACCOUNT_ALIGNMENT,
                           account,
                           ' '*self._compute_amount_alignment(account, percent),
@@ -314,8 +316,16 @@ class Post(object):
     def _format_balance_account(self):
         acc = self._account if self._amount < 0 else self._payee_accounts
         # TODO: take into account multiple payee accounts
-        return unicode('{0}{1}'.format(Post.POST_ACCOUNT_ALIGNMENT,
-                                       acc.keys()[0]))
+        formatted = unicode("{0}{1}".format(Post.POST_ACCOUNT_ALIGNMENT,
+                                            acc.keys()[0]))
+        if acc is self._account and 1 < len(self._payee_accounts):
+            # add the balance explicitly when there are more than one payee
+            # account
+            formatted = unicode("{0}{1}{2}".format(
+                formatted,
+                ' '*self._compute_amount_alignment(acc.keys()[0], 100, True),
+                Post._format_amount(-self._amount, 100, self._currency, True)))
+        return formatted
 
 
 class Resources(object):
