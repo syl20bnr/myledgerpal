@@ -28,7 +28,6 @@ import shutil
 import csv
 import json
 import re
-# import re
 
 
 ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
@@ -416,94 +415,3 @@ class Resources(object):
 
 if __name__ == '__main__':
     main()
-
-
-# class Entry(object):
-
-#     cat_regexps = {
-#         re.compile(u'Aménagement:.*'): u'Aménagement',
-#         re.compile(u'Équipements:.*'): u'Équipements',
-#         re.compile(u'Revenus:'): u'',
-#         re.compile(u"Taxes et Impôts:Crédits d'impôts"): u"Crédits d'impôts",
-#         re.compile(u"Taxes et Impôts"): u"Taxes",
-#         re.compile(u'Carte de Crédit'): u'MasterCard',
-#         re.compile(u'Transfert:MasterCard'): u'Assets:Compte Joint'
-#     }
-
-#     def __init__(self, row, args):
-#         self._account = args['<account>']
-#         self._currency = args['-c']
-#         self._is_income = '-' not in row[ROW_AMOUNT]
-#         self._date = row[ROW_DATE]
-#         self._category = self._format_category(row[ROW_CATEGORY])
-#         self._payee = row[ROW_PAYEE]
-#         self._amount = self._format_amount(row[ROW_AMOUNT])
-#         self._status = row[ROW_STATUS]
-#         self._comment = self._format_comment(row[ROW_COMMENT])
-
-#     def write(self, f):
-#         print_verbose(u'{0} {1}'.format(self._date, self._payee))
-#         target = ''
-#         if self._is_income:
-#             target = self._account
-#         else:
-#             target = u'Expenses:{0}'.format(self._category)
-#         a = self._compute_amount_alignment(target)
-#         o = unicode(
-#             '\n'
-#             '{0} * {1}{2}\n'
-#             '{3}{4}{5}{6}\n').format(
-#                 self._date, self._payee, self._comment,
-#                 POST_ACCOUNT_ALIGNMENT, target, ' '*a, self._amount)
-#         if self._is_income:
-#             prefix = '' if self._category.startswith('Assets') else 'Income:'
-#             o += u'{0}{1}\n'.format(POST_ACCOUNT_ALIGNMENT,
-#                                     u'{0}{1}'.format(prefix, self._category))
-#         f.write(o.encode('utf8'))
-
-#     def _format_comment(self, c):
-#         if c:
-#             return u'\n{0}; {1}'.format(POST_ACCOUNT_ALIGNMENT, c)
-#         else:
-#             return u''
-
-#     def _format_category(self, c):
-#         fc = re.sub(r'.:.', ':', c)
-#         for regexp, repl in Entry.cat_regexps.items():
-#             fc = re.sub(regexp, repl, fc)
-#         return fc
-
-#     def _format_amount(self, a):
-#         fa = a.replace('-', '').replace(',', '.').replace(unichr(160), ',')
-#         if '.' not in fa:
-#             fa += '.00'
-#         if re.match(r'^[a-zA-Z]+$', self._currency):
-#             return '{0} {1}'.format(fa, self._currency)
-#         else:
-#             return '{0} {1}'.format(self._currency, fa)
-
-#     def _compute_amount_alignment(self, c):
-#         lacc = len(POST_ACCOUNT_ALIGNMENT + c)
-#         lamount = len(self._amount)
-#         spacing = POST_AMOUNT_ALIGNMENT - (lacc + lamount)
-#         return spacing if spacing > 0 else 1
-
-    # write_header(outputfile)
-    # write_posts(outputfile)
-    # entries = []
-    # with open(outputfile, 'w') as o:
-    #     # write directives
-    #     o.write('; -*- ledger -*-\n\n')
-    #     o.write('bucket {0}\n'.format(args['<account>']))
-    #     # write entries
-    #     with open(args['<input>'], 'rb') as i:
-    #         reader = unicode_csv_reader(i, delimiter=',', quotechar='"')
-    #         # skip header
-    #         reader.next()
-    #         for row in reader:
-    #             e = Entry(row, args)
-    #             entries.append(e)
-    #             e.write(o)
-    # print_verbose('Posts found: {0}'.format(len(entries)))
-    # print('Conversion has been successfully written to \"{0}\"'
-    #       .format(outputfile))
