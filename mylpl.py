@@ -310,14 +310,15 @@ class Post(object):
 
     def _format_payee_accounts(self):
         acc = self._account if self._amount >= 0 else self._payee_accounts
-        formatted = [(lambda account, percent:
+        formatted = [(lambda acckey:
                       unicode("{0}{1}{2}{3}".format(
                           Post.POST_ACCOUNT_ALIGNMENT,
-                          account,
-                          ' '*self._compute_amount_alignment(account, percent),
-                          Post._format_amount(self._amount, percent,
-                                              self._currency))))(k, v)
-                     for k, v in acc.items()]
+                          acckey,
+                          ' '*self._compute_amount_alignment(acckey,
+                                                             acc[acckey]),
+                          Post._format_amount(self._amount, acc[acckey],
+                                              self._currency))))(k)
+                     for k in sorted(acc)]
         return '\n'.join(formatted)
 
     def _format_balance_account(self):
