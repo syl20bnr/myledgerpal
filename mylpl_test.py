@@ -112,6 +112,12 @@ class TestMyLedgerPal(unittest.TestCase):
                                 "Expenses:Payee3": 32}
         return post
 
+    def _get_post_several_payee_accounts_unsorted(self):
+        post = self._get_post()
+        post._payee_accounts = {"zfuwehfew": 40,
+                                "gurefjln": 40,
+                                "oipwihoefnffppfrg": 20}
+        return post
 
     def _get_post_several_payee_accounts_sum_under_100(self):
         post = self._get_post()
@@ -124,6 +130,7 @@ class TestMyLedgerPal(unittest.TestCase):
         post._payee_accounts = {"Expenses:Payee1": 20,
                                 "Expenses:Payee2": 85}
         return post
+
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -485,6 +492,17 @@ class TestMyLedgerPal(unittest.TestCase):
             u"    Expenses:Payee1                                    $ 20.89\n"
             u"    Expenses:Payee2                                    $ 47.11\n"
             u"    Expenses:Payee3                                    $ 32.00\n"
+            u"    Assets:MyAccount                                 $ -100.00"
+            "\n", unicode(post))
+
+    def test_post___str___several_payee_accounts_unsorted_output_sorted(self):
+        post = self._get_post_several_payee_accounts_unsorted()
+        self.assertEqual(
+            u"\n"
+            u"9/9/9999 * Payee\n"
+            u"    gurefjln                                           $ 40.00\n"
+            u"    oipwihoefnffppfrg                                  $ 20.00\n"
+            u"    zfuwehfew                                          $ 40.00\n"
             u"    Assets:MyAccount                                 $ -100.00"
             "\n", unicode(post))
 
