@@ -33,6 +33,7 @@ import re
 ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
 ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
 ERR_UNDEFINED_COLUMN = "Column '{0}' is not defined for bank '{1}'"
+ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100 = "Sum of percentages is not equal to 100"
 
 RESOURCES_FILENAME = ".mylplrc"
 
@@ -282,7 +283,14 @@ class Post(object):
         self._comment = ""
         self._amount = amount
 
+    def _validate(self):
+        percentage_sum = reduce(lambda x, y: x+y,
+                                [v for v in self._payee_accounts.values()])
+        if percentage_sum != 100:
+            raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
+
     def __str__(self):
+        self._validate()
         return unicode(
             '\n'
             '{0} * {1}{2}\n'
@@ -362,7 +370,15 @@ class Resources(object):
             for k1, v1 in v.items():
                 rev_rules[k1] = rev_rules.get(k1, {})
                 rev_rules[k1][k] = v1
-        return Resources(accounts, aliases, rev_rules)
+        res = Resources(accounts, aliases, rev_rules)
+        res.validate()
+        return res
+
+    def validate(self):
+        for d in self._rules.values():
+            percentage_sum = reduce(lambda x, y: x+y, d.values())
+            if percentage_sum != 100:
+                raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
 
     def get_accounts(self):
         return self._accounts

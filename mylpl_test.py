@@ -91,6 +91,11 @@ class TestMyLedgerPal(unittest.TestCase):
         res.pop("rules")
         return res
 
+    def _get_resources_data_rule_percentage_sum_is_not_100(self):
+        res = self._get_resources_data()
+        res["rules"] = {"Expenses:num1": {"Source1": 30, "Source2": 10}}
+        return res
+
     def _get_post(self):
         return mylpl.Post({"Assets:MyAccount": 100},
                           "$",
@@ -100,6 +105,18 @@ class TestMyLedgerPal(unittest.TestCase):
                           {"Expenses:Payee": 100},
                           -100)
 
+
+    def _get_post_several_payee_accounts_sum_under_100(self):
+        post = self._get_post()
+        post._payee_accounts = {"Expenses:Payee1": 20,
+                                "Expenses:Payee2": 45}
+        return post
+
+    def _get_post_several_payee_accounts_sum_above_100(self):
+        post = self._get_post()
+        post._payee_accounts = {"Expenses:Payee1": 20,
+                                "Expenses:Payee2": 85}
+        return post
     # Unit Tests
     # ------------------------------------------------------------------------
 
@@ -330,6 +347,17 @@ class TestMyLedgerPal(unittest.TestCase):
         res = mylpl.Resources.load(dct)
         self.assertEqual({}, res.get_rules())
 
+    def test_resource_with_rule_percentage_sum_equal_to_100(self):
+        dct = self._get_resources_data()
+        mylpl.Resources.load(dct)
+
+    def test_resource_with_rule_percentage_sum_not_equal_to_100(self):
+        dct = self._get_resources_data_rule_percentage_sum_is_not_100()
+        with self.assertRaises(Exception) as exception_ctx:
+            mylpl.Resources.load(dct)
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
+
     def test_resource_get_payee(self):
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
@@ -422,6 +450,17 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual(u"    Expenses:Payee",
                          post._format_balance_account())
 
+    def test__validate_ok(self):
+        post = self._get_post()
+        post._validate()
+
+    def test__validate_payee_accounts_percentage_sum_not_equal_to_100(self):
+        post = self._get_post_several_payee_accounts_sum_under_100()
+        with self.assertRaises(Exception) as exception_ctx:
+            post._validate()
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
+
     def test_post___str__(self):
         post = self._get_post()
         self.assertEqual(
@@ -430,6 +469,20 @@ class TestMyLedgerPal(unittest.TestCase):
             u"    Expenses:Payee                                    $ 100.00\n"
             u"    Assets:MyAccount\n",
             unicode(post))
+
+    def test_post___str___several_payee_accounts_sum_under_100(self):
+        post = self._get_post_several_payee_accounts_sum_under_100()
+        with self.assertRaises(Exception) as exception_ctx:
+            unicode(post)
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
+
+    def test_post___str___several_payee_accounts_sum_above_100(self):
+        post = self._get_post_several_payee_accounts_sum_above_100()
+        with self.assertRaises(Exception) as exception_ctx:
+            unicode(post)
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
 
     # Functional Tests
     # ------------------------------------------------------------------------
