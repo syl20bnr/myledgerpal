@@ -248,25 +248,20 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_resource_get_ledger_account_in_data(self):
         dct = self._get_resources_data()
         res = mylpl.Resources.load(dct)
-        self.assertEqual("Assets:Acc1", res.get_ledger_account("000-000-0000"))
-        self.assertEqual("Liabilites:Acc2",
-                         res.get_ledger_account("111-111-1111"))
+        self.assertEqual({"Assets:Acc1": 100},
+                         res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_no_account_in_data(self):
         dct = self._get_resources_data_no_account()
         res = mylpl.Resources.load(dct)
-        self.assertEqual(
-            "000-000-0000", res.get_ledger_account("000-000-0000"))
-        self.assertEqual(
-            "111-111-1111", res.get_ledger_account("111-111-1111"))
+        self.assertEqual({"Assets:000-000-0000": 100},
+                         res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_no_ledger_account_in_data(self):
         dct = self._get_resources_data_no_ledger_account()
         res = mylpl.Resources.load(dct)
-        self.assertEqual(
-            "000-000-0000", res.get_ledger_account("000-000-0000"))
-        self.assertEqual(
-            "111-111-1111", res.get_ledger_account("111-111-1111"))
+        self.assertEqual({"Assets:000-000-0000": 100},
+                         res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_get_currency(self):
         dct = self._get_resources_data()

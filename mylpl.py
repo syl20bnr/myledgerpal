@@ -374,7 +374,8 @@ class Resources(object):
         ''' Note, the account number must be passed as a string. '''
         acc = ''
         if accnumber in self._accounts:
-            acc = self._accounts[accnumber].get("account", accnumber)
+            acc = self._accounts[accnumber].get("account",
+                                                'Assets:{0}'.format(accnumber))
         else:
             acc = 'Assets:{0}'.format(accnumber)
         return {acc: 100}
