@@ -53,7 +53,7 @@ def main():
                 o = os.path.splitext(args['<input>'])[0] + '.ledger'
             i = os.path.abspath(os.path.normpath(args['<input>']))
             app = MyLedgerPal(args['<bank>'], i, o)
-            app.run
+            app.run()
     except Exception as e:
         if args['--debug']:
             import traceback
