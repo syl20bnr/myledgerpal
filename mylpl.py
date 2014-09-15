@@ -37,7 +37,9 @@ ERR_UNDEFINED_COLUMN = "Column '{0}' is not defined for bank '{1}'"
 ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100 = "Sum of percentages is not equal to 100"
 ERR_WRONG_DATE_FORMAT = "Cannot parse date {0} with respect to format {1}"
 
-RESOURCES_FILENAME = ".mylplrc"
+
+def resources_filename():
+    return ".mylplrc"
 
 
 def main():
@@ -101,7 +103,8 @@ class MyLedgerPal(object):
         locs = [os.getcwd(), os.path.dirname(output)]
         if "HOME" in os.environ:
             locs.append(os.environ["HOME"])
-        return [os.path.join(loc, RESOURCES_FILENAME) for loc in locs]
+        return [os.path.join(loc, resources_filename())
+                for loc in locs]
 
     def __init__(self, bank, input, output):
         self._bank = bank
@@ -127,7 +130,7 @@ class MyLedgerPal(object):
             raise Exception(ERR_INPUT_UNKNOWN)
         # more initializations
         self._initialize_bank()
-        self._load_resources()
+        self._resources = self._load_resources()
         # additional behavior
         if os.path.exists(self._output):
             self._backup_output()
@@ -167,7 +170,9 @@ class MyLedgerPal(object):
             data = self._get_resources_file_content(paths[i])
             i += 1
         if data:
-            self._resources = Resources.load(json.loads(data))
+            return Resources.load(json.loads(data))
+        else:
+            return Resources.load({})
 
     def _get_resources_file_content(self, path):
         if os.path.exists(path):

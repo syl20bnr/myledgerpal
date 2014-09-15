@@ -250,6 +250,23 @@ class TestMyLedgerPal(unittest.TestCase):
             self.assertEqual(",", obj._delimiter)
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__load_resources(self, init_mock):
+        obj = self._get_myledgerpal_obj()
+        res = obj._load_resources()
+        self.assertNotEqual({}, res.get_accounts())
+        self.assertNotEqual({}, res.get_aliases())
+        self.assertNotEqual({}, res.get_rules())
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__load_resources_no_resource_file(self, init_mock):
+        obj = self._get_myledgerpal_obj()
+        with patch("mylpl.resources_filename", return_value=".dummyname"):
+            res = obj._load_resources()
+        self.assertEqual({}, res.get_accounts())
+        self.assertEqual({}, res.get_aliases())
+        self.assertEqual({}, res.get_rules())
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_with_delimiter(self, init_mock):
         testbank = self._get_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
