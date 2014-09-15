@@ -27,6 +27,7 @@ import os
 import shutil
 import csv
 import json
+import time
 import re
 
 
@@ -34,6 +35,7 @@ ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
 ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
 ERR_UNDEFINED_COLUMN = "Column '{0}' is not defined for bank '{1}'"
 ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100 = "Sum of percentages is not equal to 100"
+ERR_WRONG_DATE_FORMAT = "Cannot parse date {0} with respect to format {1}"
 
 RESOURCES_FILENAME = ".mylplrc"
 
@@ -70,11 +72,13 @@ class MyLedgerPal(object):
     BANK_ENCODING = 'encoding'
     BANK_QUOTE_CHAR = 'quotechar'
     BANK_DELIMITER = 'delimiter'
+    BANK_DATE_FORMAT = 'date_format'
 
     BANKS = {
         'RBC': {BANK_ENCODING: "ISO-8859-1",
                 BANK_QUOTE_CHAR: '"',
                 BANK_DELIMITER: ",",
+                BANK_DATE_FORMAT: "%m/%d/%Y",
                 BANK_COLNAME_ACC_NUM: 1,
                 BANK_COLNAME_DATE: 2,
                 BANK_COLNAME_CHECK_NUM: 3,
@@ -134,6 +138,7 @@ class MyLedgerPal(object):
         self._encoding = i.get(c.BANK_ENCODING, "")
         self._quotechar = i.get(c.BANK_QUOTE_CHAR, '"')
         self._delimiter = i.get(c.BANK_DELIMITER, ",")
+        self._date_format = i.get(c.BANK_DATE_FORMAT, "%Y/%m/%d")
         self._columns[c.BANK_COLNAME_ACC_NUM] = i.get(
             c.BANK_COLNAME_ACC_NUM, -1)
         self._columns[c.BANK_COLNAME_CHECK_NUM] = i.get(
@@ -225,9 +230,18 @@ class MyLedgerPal(object):
         else:
             return row[self._columns[colname]]
 
+    def _get_row_date(self, row):
+        date = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DATE)
+        try:
+            fdate = time.strptime(date, self._date_format)
+        except ValueError:
+            raise Exception(ERR_WRONG_DATE_FORMAT.format(date,
+                                                         self._date_format))
+        return fdate
+
     def _create_post(self, row):
         acc_num = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
-        date = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DATE)
+        date = self._get_row_date(row)
         checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
         desc = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_DESC)
         payee = self._resources.get_payee(desc)
@@ -295,10 +309,11 @@ class Post(object):
             '\n'
             '{0} * {1}{2}\n'
             '{3}\n'
-            '{4}\n').format(
-                self._date, self._payee, self._comment,
-                self._format_payee_accounts(),
-                self._format_balance_account())
+            '{4}\n').format(self._format_date(),
+                            self._payee,
+                            self._comment,
+                            self._format_payee_accounts(),
+                            self._format_balance_account())
 
     def _compute_amount_alignment(self, account, percent, balance=False):
         lacc = len(Post.POST_ACCOUNT_ALIGNMENT + account)
@@ -307,6 +322,9 @@ class Post(object):
                                           self._currency, balance))
         spacing = Post.POST_AMOUNT_ALIGNMENT - (lacc + lamount)
         return spacing if spacing > 0 else 1
+
+    def _format_date(self):
+        return time.strftime("%Y/%m/%d", self._date)
 
     def _format_payee_accounts(self):
         acc = self._account if self._amount >= 0 else self._payee_accounts

@@ -4,6 +4,7 @@ import subprocess
 import os
 import shutil
 import inspect
+import time
 from mock import patch
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
@@ -40,17 +41,43 @@ class TestMyLedgerPal(unittest.TestCase):
     def _get_myledgerpal_obj(self):
         input = os.path.join(TEST_DATA_DIR, "RBC.csv")
         output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-        return mylpl.MyLedgerPal('RBC', input, output)
+        return mylpl.MyLedgerPal("RBC", input, output)
 
     def _get_bank_definition(self):
         return {mylpl.MyLedgerPal.BANK_ENCODING: "utf-8",
                 mylpl.MyLedgerPal.BANK_QUOTE_CHAR: "'",
                 mylpl.MyLedgerPal.BANK_DELIMITER: ":",
+                mylpl.MyLedgerPal.BANK_DATE_FORMAT: "%Y/%m/%d",
                 mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM: 1,
                 mylpl.MyLedgerPal.BANK_COLNAME_DATE: 2,
                 mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM: 3,
                 mylpl.MyLedgerPal.BANK_COLNAME_DESC: [4, 5],
                 mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT: 6}
+
+    def _get_rbc_bank_definition(self):
+        return mylpl.MyLedgerPal.BANKS["RBC"]
+
+    def _get_rbc_bank_row(self):
+        return [u"Chèques",
+                u"00335-1234567",
+                u"5/5/2014",
+                u"",
+                u"VERSEMENT SUR HYP", u"",
+                u"-756.38", "", ""]
+
+    def _get_rbc_bank_row_multiple_descriptions(self):
+        row = self._get_rbc_bank_row()
+        cls = mylpl.MyLedgerPal
+        idx = cls.BANKS['RBC'][cls.BANK_COLNAME_DESC][1]
+        row[idx] = u"OTHEQUE"
+        return row
+
+    def _get_rbc_bank_row_wrong_date_format(self):
+        row = self._get_rbc_bank_row()
+        cls = mylpl.MyLedgerPal
+        idx = cls.BANKS['RBC'][cls.BANK_COLNAME_DATE]
+        row[idx] = u"2014/01/02"
+        return row
 
     def _get_resources_data(self):
         return {"accounts": {"000-000-0000": {"account": "Assets:Acc1",
@@ -99,7 +126,7 @@ class TestMyLedgerPal(unittest.TestCase):
     def _get_post(self):
         return mylpl.Post({"Assets:MyAccount": 100},
                           "$",
-                          "9/9/9999",
+                          time.strptime("9/2/2014", "%m/%d/%Y"),
                           "01",
                           "Payee",
                           {"Expenses:Payee": 100},
@@ -232,36 +259,48 @@ class TestMyLedgerPal(unittest.TestCase):
             self.assertEqual(":", obj._delimiter)
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
-    def test__get_row_data_bank_rbc(self, init_mock):
-        row1 = [u"Chèques",
-                u"00335-1234567",
-                u"5/5/2014",
-                u"",
-                u"VERSEMENT SUR HYP", u"",
-                u"-756.38", "", ""]
-        row2 = [u"Chèques",
-                u"00335-1234567",
-                u"5/5/2014",
-                u"",
-                u"VERSEMENT SUR HYP", u"OTHEQUE",
-                u"-756.38", "", ""]
-        testbank = self._get_bank_definition()
+    def test__get_row_data_rbc_bank(self, init_mock):
+        row = self._get_rbc_bank_row()
+        testbank = self._get_rbc_bank_definition()
         with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
                           return_value=testbank):
             obj = self._get_myledgerpal_obj()
             obj._initialize_bank()
             self.assertEqual(u"00335-1234567", obj._get_row_data(
-                row1, mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM))
+                row, mylpl.MyLedgerPal.BANK_COLNAME_ACC_NUM))
             self.assertEqual(u"5/5/2014", obj._get_row_data(
-                row1, mylpl.MyLedgerPal.BANK_COLNAME_DATE))
+                row, mylpl.MyLedgerPal.BANK_COLNAME_DATE))
             self.assertEqual(u"VERSEMENT SUR HYP", obj._get_row_data(
-                row1, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
-            self.assertEqual(u"VERSEMENT SUR HYP OTHEQUE", obj._get_row_data(
-                row2, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
+                row, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
             self.assertEqual(u"", obj._get_row_data(
-                row1, mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM))
+                row, mylpl.MyLedgerPal.BANK_COLNAME_CHECK_NUM))
             self.assertEqual(u"-756.38", obj._get_row_data(
-                row1, mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT))
+                row, mylpl.MyLedgerPal.BANK_COLNAME_AMOUNT))
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__get_row_data_rbc_bank_multiple_descriptions(self, init_mock):
+        row = self._get_rbc_bank_row_multiple_descriptions()
+        testbank = self._get_rbc_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+            self.assertEqual(u"VERSEMENT SUR HYP OTHEQUE", obj._get_row_data(
+                row, mylpl.MyLedgerPal.BANK_COLNAME_DESC))
+
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__get_row_date_rbc_bank_wrong_date_format(self, init_mock):
+        row = self._get_rbc_bank_row_wrong_date_format()
+        testbank = self._get_rbc_bank_definition()
+        with patch.object(mylpl.MyLedgerPal, "_get_bank_colidx_definition",
+                          return_value=testbank):
+            obj = self._get_myledgerpal_obj()
+            obj._initialize_bank()
+        with self.assertRaises(Exception) as exception_ctx:
+            obj._get_row_date(row)
+        self.assertEqual("Cannot parse date 2014/01/02 with respect "
+                         "to format %m/%d/%Y",
+                         exception_ctx.exception.message)
 
     # ------------------------ Resources -----------------------------
 
@@ -428,6 +467,11 @@ class TestMyLedgerPal(unittest.TestCase):
         res = post._compute_amount_alignment("Expenses:Payee", 100)
         self.assertEqual(36, res)
 
+    def test_post__format_date(self):
+        post = self._get_post()
+        res = post._format_date()
+        self.assertEqual("2014/09/02", res)
+
     def test_post__compute_amount_alignment_negative_amount(self):
         post = self._get_post()
         post._amount = -100
@@ -479,7 +523,7 @@ class TestMyLedgerPal(unittest.TestCase):
         post = self._get_post()
         self.assertEqual(
             u"\n"
-            u"9/9/9999 * Payee\n"
+            u"2014/09/02 * Payee\n"
             u"    Expenses:Payee                                    $ 100.00\n"
             u"    Assets:MyAccount\n",
             unicode(post))
@@ -488,7 +532,7 @@ class TestMyLedgerPal(unittest.TestCase):
         post = self._get_post_several_payee_accounts()
         self.assertEqual(
             u"\n"
-            u"9/9/9999 * Payee\n"
+            u"2014/09/02 * Payee\n"
             u"    Expenses:Payee1                                    $ 20.89\n"
             u"    Expenses:Payee2                                    $ 47.11\n"
             u"    Expenses:Payee3                                    $ 32.00\n"
@@ -499,7 +543,7 @@ class TestMyLedgerPal(unittest.TestCase):
         post = self._get_post_several_payee_accounts_unsorted()
         self.assertEqual(
             u"\n"
-            u"9/9/9999 * Payee\n"
+            u"2014/09/02 * Payee\n"
             u"    gurefjln                                           $ 40.00\n"
             u"    oipwihoefnffppfrg                                  $ 20.00\n"
             u"    zfuwehfew                                          $ 40.00\n"
