@@ -8,7 +8,7 @@ import time
 from mock import patch
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-MYPL_SCRIPT = os.path.join(SCRIPT_PATH, 'mylpl.py')
+MYLPL_SCRIPT = os.path.join(SCRIPT_PATH, 'mylpl.py')
 TEST_DATA_DIR = os.path.join(SCRIPT_PATH, 'test_data')
 
 import mylpl
@@ -569,7 +569,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_display_banklist(self):
         self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYPL_SCRIPT, "-l"])
+        p = self._spawn_process(["python", MYLPL_SCRIPT, "-l"])
         out, err = p.communicate()
         print out
         print err
@@ -577,7 +577,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_display_help(self):
         self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYPL_SCRIPT, "-h"])
+        p = self._spawn_process(["python", MYLPL_SCRIPT, "-h"])
         out, err = p.communicate()
         print out
         print err
@@ -586,7 +586,7 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_unknown_bank(self):
         self._print_func_name(functest=True)
         b = "ubank"
-        p = self._spawn_process(["python", MYPL_SCRIPT, b, "dummy_input"])
+        p = self._spawn_process(["python", MYLPL_SCRIPT, b, "dummy_input"])
         out, err = p.communicate()
         print out
         print err
@@ -595,7 +595,7 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_unknown_input(self):
         self._print_func_name(functest=True)
         p = self._spawn_process(
-            ["python", MYPL_SCRIPT, "RBC", "invalid_input"])
+            ["python", MYLPL_SCRIPT, "RBC", "invalid_input"])
         out, err = p.communicate()
         print out
         print err
@@ -603,7 +603,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_bank_valid_but_no_input(self):
         self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYPL_SCRIPT, "RBC"])
+        p = self._spawn_process(["python", MYLPL_SCRIPT, "RBC"])
         out, err = p.communicate()
         print out
         print err
