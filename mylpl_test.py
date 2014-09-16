@@ -651,34 +651,6 @@ class TestMyLedgerPal(unittest.TestCase):
         print err
         self.assertTrue("Usage:" in err)
 
-    # def test_backup_output(self):
-    #     self._print_func_name(functest=True)
-    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-    #     expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak1")
-    #     # be sure the backup file does not exist
-    #     if os.path.exists(expected):
-    #         os.remove(expected)
-    #     p = self._spawn_process(["python", MYPL_SCRIPT, "RBC", input])
-    #     out, err = p.communicate()
-    #     print out
-    #     print err
-    #     self.assertTrue(os.path.exists(expected))
-    #     with open(output, 'r') as o:
-    #         with open(expected, 'r') as e:
-    #             self.assertEqual(o.read(), e.read())
-    #     if os.path.exists(expected):
-    #         os.remove(expected)
-
-    # def test_load_resource(self):
-    #     self._print_func_name(functest=True)
-    #     input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-    #     output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-    #     app = mylpl.MyLedgerPal('RBC', input, output)
-    #     self.assertEqual(2, app._resources.get_account_count())
-    #     self.assertEqual(4, app._resources.get_alias_count())
-    #     self.assertEqual(3, app._resources.get_rule_count())
-
     def test_run(self):
         self._print_func_name(functest=True)
         input = os.path.join(TEST_DATA_DIR, "RBC.csv")
