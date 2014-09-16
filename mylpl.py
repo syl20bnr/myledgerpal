@@ -4,7 +4,7 @@
 My ledger pal helps me to import CSV reports produced by my bank.
 
 Usage:
-  mypl.py [-div] <bank> <input> [-o OUTPUT]
+  mypl.py [-dinv] <bank> <input> [-o OUTPUT]
   mypl.py (-l | --list) [-d --debug]
   mypl.py (-h | --help)
   mypl.py --version
@@ -17,6 +17,8 @@ Options:
   -i, --interactive       Will ask me for information about the posts before
                           writing them to my ledger file.
   -l, --list              List the available banks.
+  -n, --no-backup         Will not make a backup of the output file before
+                          modifying it.
   -o FILE --output FILE   My ledger file where to export the posts.
   -v, --verbose           Print more information.
   --version               Show version.
@@ -55,10 +57,12 @@ def main():
             else:
                 o = os.path.splitext(args['<input>'])[0] + '.ledger'
             i = os.path.abspath(os.path.normpath(args['<input>']))
-            app = MyLedgerPal(args['<bank>'], i, o, args['--verbose'])
+            app = MyLedgerPal(args["<bank>"], i, o,
+                              args["--verbose"],
+                              args["--no-backup"])
             app.run()
     except Exception as e:
-        if args['--debug']:
+        if args["--debug"]:
             import traceback
             print traceback.format_exc()
         else:
@@ -107,11 +111,12 @@ class MyLedgerPal(object):
         return [os.path.join(loc, resources_filename())
                 for loc in locs]
 
-    def __init__(self, bank, input, output, verbose):
+    def __init__(self, bank, input, output, verbose, no_backup):
         self._bank = bank
         self._input = input
         self._output = output
         self._verbose = verbose
+        self._backup = not no_backup
         self._columns = {}
         self._encoding = ""
         self._quotechar = '"'
@@ -138,7 +143,7 @@ class MyLedgerPal(object):
         self._initialize_bank()
         self._resources = self._load_resources()
         # additional behavior
-        if os.path.exists(self._output):
+        if self._backup and os.path.exists(self._output):
             self._backup_output()
 
     def _initialize_bank(self):
