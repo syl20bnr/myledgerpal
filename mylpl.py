@@ -256,7 +256,7 @@ class MyLedgerPal(object):
         return fdate
 
     def _create_post(self, row):
-        self._print("Reading row: {0}".format(",".join(row)))
+        self._print(u"Reading row: {0}".format(u",".join(row)))
         acc_num = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
         date = self._get_row_date(row)
         checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
@@ -272,7 +272,7 @@ class MyLedgerPal(object):
                     float(amount))
 
     def _write_post(self, post, octx):
-        fpost = str(post)
+        fpost = unicode(post)
         self._print(fpost)
         if self._encoding:
             octx.write(fpost.encode(self._encoding))
