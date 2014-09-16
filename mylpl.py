@@ -212,14 +212,20 @@ class MyLedgerPal(object):
         return MyLedgerPal.BANKS[bankname]
 
     def _csv_reader(self, data, dialect=csv.excel, **kwargs):
-        # csv.py doesn't do Unicode; encode temporarily as UTF-8:
+        # csv.py doesn't do Unicode; encode temporarily in the bank format
         csv_reader = csv.reader(data, dialect=dialect, **kwargs)
-        for row in csv_reader:
-            # decode UTF-8 back to Unicode, cell by cell:
-            if self._encoding:
-                yield [unicode(cell, self._encoding) for cell in row]
-            else:
-                yield [cell for cell in row]
+        while True:
+            try:
+                row = next(csv_reader)
+                # decode back to Unicode, cell by cell:
+                if self._encoding:
+                    yield [unicode(cell, self._encoding) for cell in row]
+                else:
+                    yield [cell for cell in row]
+            except csv.Error as e:
+                # skip error on trailing NULL bytes
+                if "NULL byte" not in e.message:
+                    raise csv.Error
 
     def _run(self, ictx, octx):
         # write directives
