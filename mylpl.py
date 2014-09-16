@@ -4,21 +4,22 @@
 My ledger pal helps me to import CSV reports produced by my bank.
 
 Usage:
-  mypl.py <bank> <input> [-o OUTPUT] [-i --interactive] [-d --debug]
+  mypl.py [-div] <bank> <input> [-o OUTPUT]
   mypl.py (-l | --list) [-d --debug]
   mypl.py (-h | --help)
   mypl.py --version
 
 Options:
-  <bank>            My bank.
-  <input>           Input CSV file.
-  -d --debug        Print callstack.
-  -h --help         Show this help.
-  -i --interactive  Will ask me for information about the posts before
-                    writing them to my ledger file.
-  -l --list         List the available banks.
-  -o OUTPUT         My ledger file where to export the posts.
-  --version         Show version.
+  <bank>                  My bank.
+  <input>                 Input CSV file.
+  -d, --debug             Print callstack.
+  -h, --help              Show this help.
+  -i, --interactive       Will ask me for information about the posts before
+                          writing them to my ledger file.
+  -l, --list              List the available banks.
+  -o FILE --output FILE   My ledger file where to export the posts.
+  -v, --verbose           Print more information.
+  --version               Show version.
 
 Github repo: https://github.com/syl20bnr/myledgerpal
 '''
@@ -49,12 +50,12 @@ def main():
             MyLedgerPal.print_banks()
         else:
             o = ""
-            if args['-o']:
+            if args['--output']:
                 o = os.path.abspath(os.path.normpath(args['-o']))
             else:
                 o = os.path.splitext(args['<input>'])[0] + '.ledger'
             i = os.path.abspath(os.path.normpath(args['<input>']))
-            app = MyLedgerPal(args['<bank>'], i, o)
+            app = MyLedgerPal(args['<bank>'], i, o, args['--verbose'])
             app.run()
     except Exception as e:
         if args['--debug']:
@@ -106,10 +107,11 @@ class MyLedgerPal(object):
         return [os.path.join(loc, resources_filename())
                 for loc in locs]
 
-    def __init__(self, bank, input, output):
+    def __init__(self, bank, input, output, verbose):
         self._bank = bank
         self._input = input
         self._output = output
+        self._verbose = verbose
         self._columns = {}
         self._encoding = ""
         self._quotechar = '"'
@@ -121,6 +123,10 @@ class MyLedgerPal(object):
         with open(self._output, 'a') as o:
             with open(self._input, 'rb') as i:
                 self._run(i, o)
+
+    def _print(self, msg):
+        if self._verbose:
+            print(msg)
 
     def _initialize_params(self):
         # error checks
@@ -245,6 +251,7 @@ class MyLedgerPal(object):
         return fdate
 
     def _create_post(self, row):
+        self._print("Reading row: {0}".format(",".join(row)))
         acc_num = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_ACC_NUM)
         date = self._get_row_date(row)
         checknum = self._get_row_data(row, MyLedgerPal.BANK_COLNAME_CHECK_NUM)
@@ -260,10 +267,12 @@ class MyLedgerPal(object):
                     float(amount))
 
     def _write_post(self, post, octx):
+        fpost = str(post)
+        self._print(fpost)
         if self._encoding:
-            octx.write(str(post).encode(self._encoding))
+            octx.write(fpost.encode(self._encoding))
         else:
-            octx.write(str(post))
+            octx.write(fpost)
         return post
 
 
