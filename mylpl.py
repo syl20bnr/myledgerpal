@@ -126,6 +126,8 @@ class MyLedgerPal(object):
         self._initialize_params()
 
     def run(self):
+        if self._backup and os.path.exists(self._output):
+            self._backup_output()
         with open(self._output, 'a') as o:
             with open(self._input, 'rb') as i:
                 self._run(i, o)
@@ -143,9 +145,6 @@ class MyLedgerPal(object):
         # more initializations
         self._initialize_bank()
         self._resources = self._load_resources()
-        # additional behavior
-        if self._backup and os.path.exists(self._output):
-            self._backup_output()
 
     def _initialize_bank(self):
         c = MyLedgerPal
@@ -202,7 +201,7 @@ class MyLedgerPal(object):
             backup = "{0}{1}".format(base, str(i))
         shutil.copyfile(self._output, backup)
         self._print_backup_msg(backup)
-        return backup
+        self._backup = backup
 
     def _print_backup_msg(self, backup):
         print("Backup file '{0}' has been created in {1}.".format(

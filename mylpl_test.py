@@ -43,6 +43,11 @@ class TestMyLedgerPal(unittest.TestCase):
         output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
         return mylpl.MyLedgerPal("RBC", input, output)
 
+    def _get_myledgerpal_obj_no_backup(self):
+        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
+        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
+        return mylpl.MyLedgerPal("RBC", input, output, no_backup=True)
+
     def _get_bank_definition(self):
         return {mylpl.MyLedgerPal.BANK_ENCODING: "utf-8",
                 mylpl.MyLedgerPal.BANK_QUOTE_CHAR: "'",
@@ -163,10 +168,30 @@ class TestMyLedgerPal(unittest.TestCase):
 
     # ------------------------ MyLedgerPal -----------------------------
 
+    @patch.object(mylpl.MyLedgerPal, "_run")
+    @patch.object(mylpl.MyLedgerPal, "_backup_output")
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__backup_output_is_called(self, init_mock, backup_mock, run_mock):
+        with patch.object(os.path, "exists", return_value=True):
+            obj = self._get_myledgerpal_obj()
+            obj.run()
+        self.assertTrue(backup_mock.called)
+
+    @patch.object(mylpl.MyLedgerPal, "_run")
+    @patch.object(mylpl.MyLedgerPal, "_backup_output")
+    @patch.object(mylpl.MyLedgerPal, "_initialize_params")
+    def test__backup_output_is_not_called_if_no_backup(
+            self, init_mock, backup_mock, run_mock):
+        with patch.object(os.path, "exists", return_value=True):
+            obj = self._get_myledgerpal_obj_no_backup()
+            obj.run()
+        self.assertFalse(backup_mock.called)
+
+    @patch.object(mylpl.MyLedgerPal, "_run")
     @patch.object(shutil, "copyfile")
     @patch.object(mylpl.MyLedgerPal, "_print_backup_msg")
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
-    def test__backup_output(self, init_mock, print_mock, copy_mock):
+    def test__backup_output(self, init_mock, print_mock, copy_mock, run_mock):
         @static_var("exist_counter", 0)
         def mocked_exists(self):
             mocked_exists.exist_counter += 1
@@ -174,11 +199,11 @@ class TestMyLedgerPal(unittest.TestCase):
                 return True
             else:
                 return False
-        expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak5")
+        expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak4")
         with patch.object(os.path, "exists", mocked_exists):
             obj = self._get_myledgerpal_obj()
-            backup = obj._backup_output()
-            self.assertEqual(expected, backup)
+            obj.run()
+        self.assertEqual(expected, obj._backup)
 
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__initialize_bank_columns(self, init_mock):
