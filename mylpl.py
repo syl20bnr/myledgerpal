@@ -111,7 +111,8 @@ class MyLedgerPal(object):
         return [os.path.join(loc, resources_filename())
                 for loc in locs]
 
-    def __init__(self, bank, input, output, verbose, no_backup):
+    def __init__(self, bank, input, output,
+                 verbose=False, no_backup=False):
         self._bank = bank
         self._input = input
         self._output = output
