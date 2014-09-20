@@ -349,89 +349,89 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_load_with_accounts_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(2, res.get_account_count())
 
     def test_resource_load_no_account_in_data(
             self):
         dct = self._get_resources_data_no_account()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(0, res.get_account_count())
 
     def test_resource_get_ledger_account_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({"Assets:Acc1": 100},
                          res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_no_account_in_data(self):
         dct = self._get_resources_data_no_account()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({"Assets:000-000-0000": 100},
                          res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_no_ledger_account_in_data(self):
         dct = self._get_resources_data_no_ledger_account()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({"Assets:000-000-0000": 100},
                          res.get_ledger_account("000-000-0000"))
 
     def test_resource_get_ledger_account_get_currency(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("CAD", res.get_currency("000-000-0000"))
         self.assertEqual("USD", res.get_currency("111-111-1111"))
 
     def test_resource_get_ledger_account_get_currency_no_account_in_data(self):
         dct = self._get_resources_data_no_account()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("$", res.get_currency("000-000-0000"))
         self.assertEqual("$", res.get_currency("111-111-1111"))
 
     def test_resource_get_ledger_account_get_currency_no_currency_in_data(
             self):
         dct = self._get_resources_data_no_currency()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("$", res.get_currency("000-000-0000"))
         self.assertEqual("$", res.get_currency("111-111-1111"))
 
     def test_resource_load_with_aliases_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(3, res.get_alias_count())
 
     def test_resource_load_with_no_alias_in_data(self):
         dct = self._get_resources_data_no_alias()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(0, res.get_alias_count())
 
     def test_resource_get_aliases_with_aliases_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("Source1", res.get_alias("SRC1"))
         self.assertEqual("Source2", res.get_alias("SRC2"))
         self.assertEqual("Source3", res.get_alias("SRC3"))
 
     def test_resource_get_aliases_with_no_alias_in_data(self):
         dct = self._get_resources_data_no_alias()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("SRC1", res.get_alias("SRC1"))
         self.assertEqual("SRC2", res.get_alias("SRC2"))
         self.assertEqual("SRC3", res.get_alias("SRC3"))
 
     def test_resource_load_with_rules_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(3, res.get_rule_count())
 
     def test_resource_load_with_no_rule_in_data(self):
         dct = self._get_resources_data_no_rule()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(0, res.get_rule_count())
 
     def test_resource_get_rules_with_rules_in_data(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual(
             {"Source1": {"Expenses:num1": 100},
              "Source2": {"Expenses:num1": 100},
@@ -440,37 +440,37 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_get_rules_with_no_rule_in_data(self):
         dct = self._get_resources_data_no_rule()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({}, res.get_rules())
 
     def test_resource_with_rule_percentage_sum_equal_to_100(self):
         dct = self._get_resources_data()
-        mylpl.Resources(dct)
+        mylpl.Resources(dct, "dummy_path")
 
     def test_resource_with_rule_percentage_sum_not_equal_to_100(self):
         dct = self._get_resources_data_rule_percentage_sum_is_not_100()
         with self.assertRaises(Exception) as exception_ctx:
-            mylpl.Resources(dct)
+            mylpl.Resources(dct, "dummy_path")
         self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
                          exception_ctx.exception.message)
 
     def test_resource_get_payee(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("Source1", res.get_payee("SRC1"))
         self.assertEqual("Source2", res.get_payee("SRC2"))
         self.assertEqual("Source3", res.get_payee("SRC3"))
 
     def test_resource_get_payee_with_no_alias_in_data(self):
         dct = self._get_resources_data_no_alias()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual("SRC1", res.get_payee("SRC1"))
         self.assertEqual("SRC2", res.get_payee("SRC2"))
         self.assertEqual("SRC3", res.get_payee("SRC3"))
 
     def test_resource_get_payee_account(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({"Expenses:num1": 100},
                          res.get_payee_account("Source1"))
         self.assertEqual({"Expenses:num1": 100},
@@ -480,7 +480,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_get_payee_account_with_no_rule_in_data(self):
         dct = self._get_resources_data_no_rule()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         self.assertEqual({"Expenses:Unknown": 100},
                          res.get_payee_account("Source1"))
         self.assertEqual({"Expenses:Unknown": 100},
@@ -490,7 +490,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_add_ledger_account(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         res.add_ledger_account("1234-1234", "Assets:NewAccount", "CAD")
         self.assertEqual(
             {"000-000-0000": {"account": "Assets:Acc1",
@@ -502,7 +502,7 @@ class TestMyLedgerPal(unittest.TestCase):
 
     def test_resource_add_ledger_account_already_exists(self):
         dct = self._get_resources_data()
-        res = mylpl.Resources(dct)
+        res = mylpl.Resources(dct, "dummy_path")
         res.add_ledger_account("000-000-0000", "Assets:NewAccount", "CAD")
         self.assertEqual(
             {"000-000-0000": {"account": "Assets:NewAccount",
