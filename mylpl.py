@@ -181,9 +181,11 @@ class MyLedgerPal(object):
             data = self._get_resources_file_content(paths[i])
             i += 1
         if data:
-            return Resources(json.loads(data))
+            return Resources(json.loads(data), paths[i-1])
         else:
-            return Resources({})
+            # no file exist
+            # write resource file in current working directory
+            return Resources({}, paths[0])
 
     def _get_resources_file_content(self, path):
         if os.path.exists(path):
@@ -381,7 +383,8 @@ class Post(object):
 
 class Resources(object):
 
-    def __init__(self, dct):
+    def __init__(self, dct, path):
+        self._path = path
         self._accounts = dct.get("accounts", {})
         self._aliases = dct.get("aliases", {})
         # we want the ledger account to be the key in the file because it
@@ -403,18 +406,31 @@ class Resources(object):
         # For practical reasons we want the information to be stored in memory
         # with the description as the key instead of the ledger account
         rules = dct.get("rules", {})
-        self._rules = {}
+        self._rules = Resources.rotate_rules(rules)
+        self.validate()
+
+    @staticmethod
+    def rotate_rules(rules):
+        res = {}
         for k, v in rules.items():
             for k1, v1 in v.items():
-                self._rules[k1] = self._rules.get(k1, {})
-                self._rules[k1][k] = v1
-        self.validate()
+                res[k1] = res.get(k1, {})
+                res[k1][k] = v1
+        return res
 
     def validate(self):
         for d in self._rules.values():
             percentage_sum = reduce(lambda x, y: x+y, d.values())
             if percentage_sum != 100:
                 raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
+
+    def write(self):
+        ''' if path == None then original self._path is used to save the
+        file '''
+        with open(self._path, 'w') as f:
+            json.dump({"accounts": self._accounts,
+                       "aliases": self._aliases,
+                       "rules": Resources.rotate_rules(self._rules)}, f)
 
     def get_accounts(self):
         return self._accounts

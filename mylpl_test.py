@@ -5,6 +5,7 @@ import os
 import shutil
 import inspect
 import time
+import json
 from mock import patch
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
@@ -508,6 +509,16 @@ class TestMyLedgerPal(unittest.TestCase):
                               "currency": "CAD"},
              "111-111-1111": {"account": "Liabilites:Acc2",
                               "currency": "USD"}}, res.get_accounts())
+
+    def test_resource_read_write_idempotency(self):
+        dct = self._get_resources_data()
+        out = os.path.join(SCRIPT_PATH, "tmp.txt")
+        res = mylpl.Resources(dct, out)
+        res.write()
+        with open(out, 'r') as f:
+            content = f.read()
+        os.remove(out)
+        self.assertEqual(dct, json.loads(content))
 
     # ------------------------ Post -----------------------------
 
