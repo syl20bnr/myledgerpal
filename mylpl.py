@@ -181,9 +181,9 @@ class MyLedgerPal(object):
             data = self._get_resources_file_content(paths[i])
             i += 1
         if data:
-            return Resources.load(json.loads(data))
+            return Resources(json.loads(data))
         else:
-            return Resources.load({})
+            return Resources({})
 
     def _get_resources_file_content(self, path):
         if os.path.exists(path):
@@ -381,15 +381,9 @@ class Post(object):
 
 class Resources(object):
 
-    def __init__(self, accounts, aliases, rules):
-        self._accounts = accounts
-        self._aliases = aliases
-        self._rules = rules
-
-    @staticmethod
-    def load(dct):
-        accounts = dct.get("accounts", {})
-        aliases = dct.get("aliases", {})
+    def __init__(self, dct):
+        self._accounts = dct.get("accounts", {})
+        self._aliases = dct.get("aliases", {})
         # we want the ledger account to be the key in the file because it
         # makes the file a lot more easier to maintain, especially because
         # it avoids a lot of redundancy. example:
@@ -409,14 +403,12 @@ class Resources(object):
         # For practical reasons we want the information to be stored in memory
         # with the description as the key instead of the ledger account
         rules = dct.get("rules", {})
-        rev_rules = {}
+        self._rules = {}
         for k, v in rules.items():
             for k1, v1 in v.items():
-                rev_rules[k1] = rev_rules.get(k1, {})
-                rev_rules[k1][k] = v1
-        res = Resources(accounts, aliases, rev_rules)
-        res.validate()
-        return res
+                self._rules[k1] = self._rules.get(k1, {})
+                self._rules[k1][k] = v1
+        self.validate()
 
     def validate(self):
         for d in self._rules.values():
