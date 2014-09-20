@@ -487,6 +487,28 @@ class TestMyLedgerPal(unittest.TestCase):
         self.assertEqual({"Expenses:Unknown": 100},
                          res.get_payee_account("Source3"))
 
+    def test_resource_add_ledger_account(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct)
+        res.add_ledger_account("1234-1234", "Assets:NewAccount", "CAD")
+        self.assertEqual(
+            {"000-000-0000": {"account": "Assets:Acc1",
+                              "currency": "CAD"},
+             "111-111-1111": {"account": "Liabilites:Acc2",
+                              "currency": "USD"},
+             "1234-1234": {"account": "Assets:NewAccount",
+                           "currency": "CAD"}}, res.get_accounts())
+
+    def test_resource_add_ledger_account_already_exists(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct)
+        res.add_ledger_account("000-000-0000", "Assets:NewAccount", "CAD")
+        self.assertEqual(
+            {"000-000-0000": {"account": "Assets:NewAccount",
+                              "currency": "CAD"},
+             "111-111-1111": {"account": "Liabilites:Acc2",
+                              "currency": "USD"}}, res.get_accounts())
+
     # ------------------------ Post -----------------------------
 
     def test_post__get_adjusted_amount_positive_100(self):

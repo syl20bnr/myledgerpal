@@ -432,6 +432,9 @@ class Resources(object):
             acc = 'Assets:{0}'.format(accnumber)
         return {acc: 100}
 
+    def add_ledger_account(self, accnumber, acc, currency):
+        self._accounts[accnumber] = {"account": acc, "currency": currency}
+
     def get_currency(self, accnumber):
         ''' Note, the account number must be passed as a string. '''
         if accnumber in self._accounts:
