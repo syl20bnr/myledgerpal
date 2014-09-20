@@ -347,6 +347,23 @@ class TestMyLedgerPal(unittest.TestCase):
 
     # ------------------------ Resources -----------------------------
 
+    def test_resource_rotate_rules(self):
+        dct = {"A": {"a": 100, "b": 100},
+               "B": {"c": 40},
+               "C": {"c": 60}}
+        rdct = mylpl.Resources.rotate_rules(dct)
+        self.assertEqual(
+            {"a": {"A": 100},
+             "b": {"A": 100},
+             "c": {"B": 40, "C": 60}}, rdct)
+
+    def test_resource_rotate_rules_twice_idempotency(self):
+        dct = {"A": {"a": 100, "b": 100},
+               "B": {"c": 40},
+               "C": {"c": 60}}
+        rdct = mylpl.Resources.rotate_rules(mylpl.Resources.rotate_rules(dct))
+        self.assertEqual(dct, rdct)
+
     def test_resource_load_with_accounts_in_data(self):
         dct = self._get_resources_data()
         res = mylpl.Resources(dct, "dummy_path")
