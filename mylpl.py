@@ -383,6 +383,19 @@ class Post(object):
 
 class Resources(object):
 
+    @staticmethod
+    def rotate_rules(rules):
+        ''' Rotate dictionary of the form {x: {y: a, z: b}} to
+        {y: {x: a}, z: {x: b}}
+        Invariant: rotate_rules applied twice to x = x
+        '''
+        res = {}
+        for k, v in rules.items():
+            for k1, v1 in v.items():
+                res[k1] = res.get(k1, {})
+                res[k1][k] = v1
+        return res
+
     def __init__(self, dct, path):
         self._path = path
         self._accounts = dct.get("accounts", {})
@@ -409,15 +422,6 @@ class Resources(object):
         self._rules = Resources.rotate_rules(rules)
         self.validate()
 
-    @staticmethod
-    def rotate_rules(rules):
-        res = {}
-        for k, v in rules.items():
-            for k1, v1 in v.items():
-                res[k1] = res.get(k1, {})
-                res[k1][k] = v1
-        return res
-
     def validate(self):
         self._validate_rules()
 
@@ -428,7 +432,7 @@ class Resources(object):
                 raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
 
     def write(self):
-        ''' if path == None then original self._path is used to save the
+        ''' if _path == None then original self._path is used to save the
         file '''
         with open(self._path, 'w') as f:
             json.dump({"accounts": self._accounts,
