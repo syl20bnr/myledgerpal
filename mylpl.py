@@ -480,7 +480,7 @@ class Resources(object):
     def get_rule_count(self):
         return len(self._rules)
 
-    def add_rule(self, payee_desc, dist):
+    def add_rule(self, payee, dist):
         ''' dist is a list of tuples (x, y) where:
         x is the payee account
         y is the percentage
@@ -493,7 +493,7 @@ class Resources(object):
             rule[payee_acc] = percent
             psum += percent
         if psum == 100:
-            self._rules[payee_desc] = rule
+            self._rules[payee] = rule
         else:
             raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
 
