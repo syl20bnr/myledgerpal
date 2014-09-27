@@ -474,6 +474,9 @@ class Resources(object):
     def get_alias(self, desc):
         return self._aliases.get(desc, desc)
 
+    def add_alias(self, desc, payee):
+        self._aliases[desc] = payee
+
     def get_rules(self):
         return self._rules
 

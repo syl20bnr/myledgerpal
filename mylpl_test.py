@@ -527,6 +527,23 @@ class TestMyLedgerPal(unittest.TestCase):
              "111-111-1111": {"account": "Liabilites:Acc2",
                               "currency": "USD"}}, res.get_accounts())
 
+    def test_resource_add_alias(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        res.add_alias("SRC4", "Source4")
+        self.assertEqual({"SRC1": "Source1",
+                          "SRC2": "Source2",
+                          "SRC3": "Source3",
+                          "SRC4": "Source4"}, res.get_aliases())
+
+    def test_resource_add_alias_already_exists(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        res.add_alias("SRC1", "Source4")
+        self.assertEqual({"SRC1": "Source4",
+                          "SRC2": "Source2",
+                          "SRC3": "Source3"}, res.get_aliases())
+
     def test_resource_add_rule(self):
         dct = self._get_resources_data()
         res = mylpl.Resources(dct, "dummy_path")
