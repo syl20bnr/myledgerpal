@@ -527,6 +527,60 @@ class TestMyLedgerPal(unittest.TestCase):
              "111-111-1111": {"account": "Liabilites:Acc2",
                               "currency": "USD"}}, res.get_accounts())
 
+    def test_resource_add_rule(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        res.add_rule("NewPayee", [("Expenses:num4", 100)])
+        # rules are rotated before being stored
+        expect = mylpl.Resources.rotate_rules(
+            {"Expenses:num1": {"Source1": 100, "Source2": 100},
+             "Expenses:num2": {"Source3": 40},
+             "Expenses:num3": {"Source3": 60},
+             "Expenses:num4": {"NewPayee": 100}})
+        self.assertEqual(expect, res.get_rules())
+
+    def test_resource_add_rule_with_distribution(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        res.add_rule("NewPayee", [("Expenses:num4", 30),
+                                  ("Expenses:num5", 70)])
+        # rules are rotated before being stored
+        expect = mylpl.Resources.rotate_rules(
+            {"Expenses:num1": {"Source1": 100, "Source2": 100},
+             "Expenses:num2": {"Source3": 40},
+             "Expenses:num3": {"Source3": 60},
+             "Expenses:num4": {"NewPayee": 30},
+             "Expenses:num5": {"NewPayee": 70}})
+        self.assertEqual(expect, res.get_rules())
+
+    def test_resource_add_rule_with_distribution_not_equal_to_100(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        with self.assertRaises(Exception) as exception_ctx:
+            res.add_rule("NewPayee", [("Expenses:num4", 30),
+                                      ("Expenses:num5", 60)])
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
+
+    def test_resource_add_rule_already_exist(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        res.add_rule("Source1", [("Expenses:num4", 100)])
+        expect = mylpl.Resources.rotate_rules(
+            {"Expenses:num1": {"Source2": 100},
+             "Expenses:num2": {"Source3": 40},
+             "Expenses:num3": {"Source3": 60},
+             "Expenses:num4": {"Source1": 100}})
+        self.assertEqual(expect, res.get_rules())
+
+    def test_resource_add_rule_already_exist_not_equal_to_100(self):
+        dct = self._get_resources_data()
+        res = mylpl.Resources(dct, "dummy_path")
+        with self.assertRaises(Exception) as exception_ctx:
+            res.add_rule("Source1", [("Expenses:num4", 20)])
+        self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
+                         exception_ctx.exception.message)
+
     def test_resource_read_write_idempotency(self):
         dct = self._get_resources_data()
         out = os.path.join(SCRIPT_PATH, "tmp.txt")

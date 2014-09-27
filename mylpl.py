@@ -419,6 +419,9 @@ class Resources(object):
         return res
 
     def validate(self):
+        self._validate_rules()
+
+    def _validate_rules(self):
         for d in self._rules.values():
             percentage_sum = reduce(lambda x, y: x+y, d.values())
             if percentage_sum != 100:
@@ -458,18 +461,6 @@ class Resources(object):
         else:
             return "$"
 
-    def get_payee(self, desc):
-        for k in self._aliases.keys():
-            if k in desc:
-                return self._aliases[k]
-        return desc
-
-    def get_payee_account(self, payee):
-        for k in self._rules.keys():
-            if k == payee:
-                return self._rules[k]
-        return {"Expenses:Unknown": 100}
-
     def get_aliases(self):
         return self._aliases
 
@@ -484,6 +475,35 @@ class Resources(object):
 
     def get_rule_count(self):
         return len(self._rules)
+
+    def add_rule(self, payee_desc, dist):
+        ''' dist is a list of tuples (x, y) where:
+        x is the payee account
+        y is the percentage
+        The sum of all passed y values must be equal to 100.
+        '''
+        rule = {}
+        psum = 0
+        for d in dist:
+            payee_acc, percent = d
+            rule[payee_acc] = percent
+            psum += percent
+        if psum == 100:
+            self._rules[payee_desc] = rule
+        else:
+            raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
+
+    def get_payee(self, desc):
+        for k in self._aliases.keys():
+            if k in desc:
+                return self._aliases[k]
+        return desc
+
+    def get_payee_account(self, payee):
+        for k in self._rules.keys():
+            if k == payee:
+                return self._rules[k]
+        return {"Expenses:Unknown": 100}
 
 if __name__ == '__main__':
     main()
