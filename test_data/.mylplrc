@@ -26,6 +26,9 @@
         },
         "Expenses:Transports:Voiture:Assurance":{
             "Assurances Desjardins": 60
+        },
+        "Expenses:Transports:Voiture:Essence":{
+            "Essence (Costco)": 100
         }
     }
 }

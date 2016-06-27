@@ -1,7 +1,8 @@
-#!/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''mypl.py (2014 - Sylvain Benner)
-My ledger pal helps me to import CSV reports produced by my bank.
+'''mypl.py - 2014-2016 (c) Sylvain Benner
+My ledger pal helps me to import CSV reports produced by my bank
+into Emacs using Ledger.
 
 Usage:
   mypl.py [-dinv] <bank> <input> [-o OUTPUT]
@@ -32,7 +33,11 @@ import csv
 import json
 import time
 import re
+import fileinput
+import readline
 
+
+LEDGER_MODE_DIRECTIVE = "; -*- ledger -*-"
 
 ERR_BANK_UNKNOWN = "Unknown bank '{0}'"
 ERR_INPUT_UNKNOWN = "Prodived input file does not exist."
@@ -45,6 +50,14 @@ def resources_filename():
     return ".mylplrc"
 
 
+def rlinput(prompt, prefill=''):
+    readline.set_startup_hook(lambda: readline.insert_text(prefill))
+    try:
+        return raw_input(prompt)
+    finally:
+        readline.set_startup_hook()
+
+
 def main():
     try:
         args = docopt(__doc__, version='My Ledger Pal (mylpl) v0.1')
@@ -53,11 +66,12 @@ def main():
         else:
             o = ""
             if args['--output']:
-                o = os.path.abspath(os.path.normpath(args['-o']))
+                o = os.path.abspath(os.path.normpath(args['--output']))
             else:
                 o = os.path.splitext(args['<input>'])[0] + '.ledger'
             i = os.path.abspath(os.path.normpath(args['<input>']))
             app = MyLedgerPal(args["<bank>"], i, o,
+                              args["--interactive"],
                               args["--verbose"],
                               args["--no-backup"])
             app.run()
@@ -112,10 +126,13 @@ class MyLedgerPal(object):
                 for loc in locs]
 
     def __init__(self, bank, input, output,
-                 verbose=False, no_backup=False):
+                 interactive=False,
+                 verbose=False,
+                 no_backup=False):
         self._bank = bank
         self._input = input
         self._output = output
+        self._interactive = interactive
         self._verbose = verbose
         self._backup = not no_backup
         self._columns = {}
@@ -123,14 +140,14 @@ class MyLedgerPal(object):
         self._quotechar = '"'
         self._delimiter = ","
         self._resources = None
+        self._is_new_file = not os.path.exists(self._output)
         self._initialize_params()
 
     def run(self):
         if self._backup and os.path.exists(self._output):
             self._backup_output()
-        with open(self._output, 'a') as o:
-            with open(self._input, 'rb') as i:
-                self._run(i, o)
+        with open(self._input, 'rb') as i:
+            self._run(i)
 
     def _print(self, msg):
         if self._verbose:
@@ -181,11 +198,11 @@ class MyLedgerPal(object):
             data = self._get_resources_file_content(paths[i])
             i += 1
         if data:
-            return Resources(json.loads(data), paths[i-1])
+            return Resources(json.loads(data), paths[i-1], self._interactive)
         else:
             # no file exist
             # write resource file in current working directory
-            return Resources({}, paths[0])
+            return Resources({}, paths[0], self._interactive)
 
     def _get_resources_file_content(self, path):
         if os.path.exists(path):
@@ -229,16 +246,17 @@ class MyLedgerPal(object):
                 if "NULL byte" not in e.message:
                     raise csv.Error
 
-    def _run(self, ictx, octx):
-        # write directives
-        octx.write('; -*- ledger -*-\n\n')
-        # write entries
+    def _run(self, i):
         reader = self._csv_reader(
-            ictx, delimiter=self._delimiter, quotechar=self._quotechar)
+            i, delimiter=self._delimiter, quotechar=self._quotechar)
+        # ensure output file exists
+        open(self._output, 'a').close()
         # skip header
         reader.next()
-        posts = [self._write_post(self._create_post(row), octx)
+        posts = [self._write_post(self._create_post(row))
                  for row in reader]
+        if self._interactive:
+            self._resources.write()
         print("Number of posts: {0}".format(len(posts)))
 
     def _get_row_data(self, row, colname):
@@ -279,13 +297,35 @@ class MyLedgerPal(object):
                     self._resources.get_payee_account(payee),
                     float(amount))
 
-    def _write_post(self, post, octx):
-        fpost = unicode(post)
-        self._print(fpost)
-        if self._encoding:
-            octx.write(fpost.encode(self._encoding))
-        else:
-            octx.write(fpost)
+    def _write_post(self, post):
+        upost = unicode(post)
+        self._print(upost)
+        date = post.get_date()
+        rx = re.compile(r'^([0-9]{4}\/[0-9]{2}\/[0-9]{2}).*')
+        written = False
+        # write the post chronologically in output file
+        for line in fileinput.input(self._output, inplace=1, backup=".tmp"):
+            if fileinput.isfirstline():
+                if LEDGER_MODE_DIRECTIVE not in line:
+                    print(LEDGER_MODE_DIRECTIVE)
+            m = rx.match(line)
+            if not written and m is not None and m.group(1) > date:
+                written = True
+                if self._encoding:
+                    print(upost.encode(self._encoding))
+                else:
+                    print(upost)
+            print line,
+        if not written:
+            with open(self._output, 'a') as o:
+                if self._encoding:
+                    o.write('\n')
+                    o.write(upost.encode(self._encoding))
+                else:
+                    o.write('\n')
+                    o.write(upost)
+        if self._interactive:
+            self._resources.write()
         return post
 
 
@@ -324,6 +364,9 @@ class Post(object):
         self._comment = ""
         self._amount = amount
 
+    def get_date(self):
+        return self._format_date()
+
     def _validate(self):
         percentage_sum = reduce(lambda x, y: x+y,
                                 [v for v in self._payee_accounts.values()])
@@ -333,7 +376,6 @@ class Post(object):
     def __str__(self):
         self._validate()
         return unicode(
-            '\n'
             '{0} * {1}{2}\n'
             '{3}\n'
             '{4}\n').format(self._format_date(),
@@ -396,8 +438,9 @@ class Resources(object):
                 res[k1][k] = v1
         return res
 
-    def __init__(self, dct, path):
+    def __init__(self, dct, path, interactive=False):
         self._path = path
+        self._interactive = interactive
         self._accounts = dct.get("accounts", {})
         self._aliases = dct.get("aliases", {})
         # we want the ledger account to be the key in the file because it
@@ -449,13 +492,23 @@ class Resources(object):
         ''' Note, the account number must be passed as a string. '''
         acc = ''
         if accnumber in self._accounts:
-            acc = self._accounts[accnumber].get("account",
-                                                'Assets:{0}'.format(accnumber))
-        else:
-            acc = 'Assets:{0}'.format(accnumber)
+            acc = self._accounts[accnumber].get("account", '')
+        if acc == '':
+            if self._interactive:
+                print("----------------------------------------------------")
+                print("Unknown account {0}".format(accnumber))
+                acc = raw_input("Account name: ")
+                currency = raw_input("Currency: ")
+                self._accounts[accnumber] = {
+                    "account": acc,
+                    "currency": currency
+                }
+            else:
+                acc = 'Assets:{0}'.format(accnumber)
         return {acc: 100}
 
     def add_ledger_account(self, accnumber, acc, currency):
+        ''' Note, the account number must be passed as a string. '''
         self._accounts[accnumber] = {"account": acc, "currency": currency}
 
     def get_currency(self, accnumber):
@@ -501,16 +554,53 @@ class Resources(object):
             raise Exception(ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100)
 
     def get_payee(self, desc):
+        alias = None
         for k in self._aliases.keys():
             if k in desc:
-                return self._aliases[k]
-        return desc
+                alias = self._aliases[k]
+                break
+        if alias is None:
+            if self._interactive:
+                print("----------------------------------------------------")
+                print("No alias found for match {0}".format(desc))
+                match = rlinput("Match: ", desc)
+                alias = (raw_input("Alias (default: {0}): ".format(match))
+                         or match)
+                self._aliases[match] = alias
+            else:
+                alias = desc
+        return alias
 
     def get_payee_account(self, payee):
-        for k in self._rules.keys():
-            if k == payee:
-                return self._rules[k]
-        return {"Expenses:Unknown": 100}
+        accounts = {}
+        if payee not in self._rules:
+            if self._interactive:
+                print("----------------------------------------------------")
+                print("Unknown accounts for payee {0}".format(payee))
+                total = 0
+                share = None
+                while total < 100:
+                    pacc = (raw_input("Account (default: Expenses:Unknown): ")
+                            or "Expenses:Unknown")
+                    while share is None:
+                        share = (raw_input("Percentage (default: 100): ")
+                                 or "100")
+                        try:
+                            share = int(share)
+                            if share < 1 or share > 100:
+                                raise Exception()
+                        except:
+                            print("Error: enter a number between 1 and 100.")
+                            share = None
+                    total += share
+                    accounts[pacc] = share
+                self._rules[payee] = accounts
+            else:
+                accounts = {"Expenses:Unknown": 100}
+        else:
+            accounts = self._rules[payee]
+        return accounts
+
 
 if __name__ == '__main__':
     main()

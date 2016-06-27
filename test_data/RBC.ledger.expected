@@ -1,0 +1,42 @@
+; -*- ledger -*-
+
+2014/04/28 * Electronic Box
+    Expenses:Unknown                                   $ 95.25
+    Assets:Compte Joint RBC
+
+2014/04/28 * Hydro Quebec
+    Expenses:Unknown                                  $ 336.59
+    Assets:Compte Joint RBC
+
+2014/05/01 * Essence (Costco)
+    Expenses:Transports:Voiture:Essence                $ 52.69
+    Assets:Compte Joint RBC
+
+2014/05/01 * Costco
+    Expenses:Alimentation:Courses                      $ 96.32
+    Assets:Compte Joint RBC
+
+2014/05/05 * Hypotheque
+    Expenses:Unknown                                  $ 756.38
+    Assets:Compte Joint RBC
+
+2014/05/09 * CHEQUE No 013
+    Expenses:Unknown                                   $ 60.00
+    Assets:Compte Joint RBC
+
+2014/05/10 * Essence (Costco)
+    Expenses:Transports:Voiture:Essence                $ 60.32
+    Assets:Compte Joint RBC
+
+2014/05/12 * Assurances Desjardins
+    Expenses:Logement:Assurance                        $ 57.37
+    Expenses:Transports:Voiture:Assurance              $ 86.05
+    Assets:Compte Joint RBC                          $ -143.42
+
+2014/05/23 * Frais Bancaires
+    Expenses:Unknown                                   $ 10.95
+    Assets:Compte Joint RBC
+
+2014/07/14 * Remboursement Banque
+    Assets:Compte Joint RBC                            $ 46.00
+    Expenses:Unknown

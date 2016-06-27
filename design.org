@@ -1,4 +1,3 @@
-
 * Overview
 Input: bank, csv file
 Output: ledger file

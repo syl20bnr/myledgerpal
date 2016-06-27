@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
-import subprocess
 import os
 import shutil
-import inspect
 import time
 import json
 from mock import patch
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-MYLPL_SCRIPT = os.path.join(SCRIPT_PATH, 'mylpl.py')
 TEST_DATA_DIR = os.path.join(SCRIPT_PATH, 'test_data')
 
 import mylpl
@@ -23,21 +20,9 @@ def static_var(varname, value):
     return decorate
 
 
-class TestMyLedgerPal(unittest.TestCase):
+class UnitTestsMyLedgerPal(unittest.TestCase):
 
-    def _spawn_process(self, args):
-        args.append('--debug')
-        p = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return p
-
-    def _print_func_name(self, functest=False):
-        print("\n-----------------------------------------------------------")
-        if functest:
-            print("FuncTest: {0}".format(inspect.stack()[1][3]))
-        else:
-            print("UnitTest: {0}".format(inspect.stack()[1][3]))
-        print("-----------------------------------------------------------")
+    # --------------------------- Utils --------------------------------
 
     def _get_myledgerpal_obj(self):
         input = os.path.join(TEST_DATA_DIR, "RBC.csv")
@@ -164,9 +149,6 @@ class TestMyLedgerPal(unittest.TestCase):
                                 "Expenses:Payee2": 85}
         return post
 
-    # Unit Tests
-    # ------------------------------------------------------------------------
-
     # ------------------------ MyLedgerPal -----------------------------
 
     @patch.object(mylpl.MyLedgerPal, "_run")
@@ -194,15 +176,15 @@ class TestMyLedgerPal(unittest.TestCase):
     @patch.object(mylpl.MyLedgerPal, "_initialize_params")
     def test__backup_output(self, init_mock, print_mock, copy_mock, run_mock):
         @static_var("exist_counter", 0)
-        def mocked_exists(self):
+        def mocked_exists(path):
             mocked_exists.exist_counter += 1
             if mocked_exists.exist_counter < 5:
                 return True
             else:
                 return False
         expected = os.path.join(TEST_DATA_DIR, "RBC.ledger.bak4")
+        obj = self._get_myledgerpal_obj()
         with patch.object(os.path, "exists", mocked_exists):
-            obj = self._get_myledgerpal_obj()
             obj.run()
         self.assertEqual(expected, obj._backup)
 
@@ -685,7 +667,6 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_post___str__(self):
         post = self._get_post()
         self.assertEqual(
-            u"\n"
             u"2014/09/02 * Payee\n"
             u"    Expenses:Payee                                    $ 100.00\n"
             u"    Assets:MyAccount\n",
@@ -694,7 +675,6 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_post___str___several_payee_accounts(self):
         post = self._get_post_several_payee_accounts()
         self.assertEqual(
-            u"\n"
             u"2014/09/02 * Payee\n"
             u"    Expenses:Payee1                                    $ 20.89\n"
             u"    Expenses:Payee2                                    $ 47.11\n"
@@ -705,7 +685,6 @@ class TestMyLedgerPal(unittest.TestCase):
     def test_post___str___several_payee_accounts_unsorted_output_sorted(self):
         post = self._get_post_several_payee_accounts_unsorted()
         self.assertEqual(
-            u"\n"
             u"2014/09/02 * Payee\n"
             u"    gurefjln                                           $ 40.00\n"
             u"    oipwihoefnffppfrg                                  $ 20.00\n"
@@ -726,59 +705,6 @@ class TestMyLedgerPal(unittest.TestCase):
             unicode(post)
         self.assertEqual(mylpl.ERR_PERCENTAGE_SUM_NOT_EQUAL_TO_100,
                          exception_ctx.exception.message)
-
-    # Functional Tests
-    # ------------------------------------------------------------------------
-
-    def test_display_banklist(self):
-        self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYLPL_SCRIPT, "-l"])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue("Available banks" in out)
-
-    def test_display_help(self):
-        self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYLPL_SCRIPT, "-h"])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue("mypl" in out)
-
-    def test_unknown_bank(self):
-        self._print_func_name(functest=True)
-        b = "ubank"
-        p = self._spawn_process(["python", MYLPL_SCRIPT, b, "dummy_input"])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue(mylpl.ERR_BANK_UNKNOWN.format(b) in out)
-
-    def test_unknown_input(self):
-        self._print_func_name(functest=True)
-        p = self._spawn_process(
-            ["python", MYLPL_SCRIPT, "RBC", "invalid_input"])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue(mylpl.ERR_INPUT_UNKNOWN in out)
-
-    def test_bank_valid_but_no_input(self):
-        self._print_func_name(functest=True)
-        p = self._spawn_process(["python", MYLPL_SCRIPT, "RBC"])
-        out, err = p.communicate()
-        print out
-        print err
-        self.assertTrue("Usage:" in err)
-
-    def test_run(self):
-        self._print_func_name(functest=True)
-        input = os.path.join(TEST_DATA_DIR, "RBC.csv")
-        output = os.path.join(TEST_DATA_DIR, "RBC.ledger")
-        app = mylpl.MyLedgerPal('RBC', input, output)
-        app.run()
-
 
 if __name__ == '__main__':
     unittest.main()
